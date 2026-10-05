@@ -9,5 +9,6 @@ public static class RenderedAnimationAppBuilder
 {
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<global::PKHeX.Avalonia.App>()
         .UseSkia().WithInterFont()
+        .With(global::PKHeX.Avalonia.Services.PlatformFontOptions.Create())
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 }

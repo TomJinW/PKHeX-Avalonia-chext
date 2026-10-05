@@ -18,11 +18,16 @@ public partial class TrainerEditorViewModel : ViewModelBase, IDisposable
     public bool IsLGPE => LgpeEditor is not null;
     public bool HasDedicatedTrainerWorkspace => IsZA || IsLGPE || IsGen7;
 
-    public TrainerEditorViewModel(SaveFile sav, IDialogService? dialogs = null, IImageCodec? imageCodec = null)
+    public TrainerEditorViewModel(SaveFile sav, IDialogService? dialogs = null, IImageCodec? imageCodec = null, AppSettings? settings = null)
     {
+        _nameSettings = settings ?? new AppSettings();
+        _gbTrainerEncoding = _nameSettings.GetNameEncoding(sav.Generation);
+        _gen4TrainerEncoding = _nameSettings.Gen4NameEncoding;
+        _useChineseTrainerName = _nameSettings.Gen3ChineseNamesEnabled;
         _zaSession = sav is SAV9ZA za ? new ZaTrainerDataSession(za) : null;
         _sav = _zaSession?.Staged ?? sav;
         _zaDialogs = dialogs;
+        _trainerDialogs = dialogs;
         _zaImageCodec = imageCodec;
         LgpeEditor = sav is SAV7b lgpe ? new Misc7bEditorViewModel(lgpe, dialogs) : null;
         _lgpeParentBaseline = sav is SAV7b lgpeBaseline ? (SAV7b)lgpeBaseline.Clone() : null;
@@ -107,15 +112,20 @@ public partial class TrainerEditorViewModel : ViewModelBase, IDisposable
 
     public bool IsDisplayIdValid => !UsesSixDigitTrainerIds || _sav.IsValidTrainerID7(DisplaySid, DisplayTid);
 
-    private bool CanSave() => IsDisplayIdValid && (!IsZA || (!_zaClosed && IsZaInputValid));
+    private bool CanSave() => IsTrainerNameEncodingValid && IsDisplayIdValid && (!IsZA || (!_zaClosed && IsZaInputValid));
 
     partial void OnDisplayTidChanged(uint value)
     {
+        InvalidateGen2ClockPassword();
         OnPropertyChanged(nameof(MaxDisplaySid));
         OnPropertyChanged(nameof(IsDisplayIdValid));
     }
 
-    partial void OnDisplaySidChanged(uint value) => OnPropertyChanged(nameof(IsDisplayIdValid));
+    partial void OnDisplaySidChanged(uint value)
+    {
+        InvalidateGen2ClockPassword();
+        OnPropertyChanged(nameof(IsDisplayIdValid));
+    }
 
     private PropertyInfo? _badgesProperty;
     
@@ -219,7 +229,8 @@ public partial class TrainerEditorViewModel : ViewModelBase, IDisposable
 
     private void LoadFromSave()
     {
-        TrainerName = _sav.OT;
+        InvalidateGen2ClockPassword();
+        TrainerName = DecodedTrainerName;
         Gender = _sav.Gender;
         // SCBlock-based saves (LA, SV, ZA) throw when the block type is None on a blank save.
         // Wrap each property that routes through GetBlockValue so the editor still loads.
@@ -432,6 +443,7 @@ public partial class TrainerEditorViewModel : ViewModelBase, IDisposable
     [RelayCommand(CanExecute = nameof(CanSave))]
     private void Save()
     {
+        if (!IsTrainerNameEncodingValid) return;
         if (Gen7Editor is not null && _gen7ParentBaseline is { } gen7Baseline)
         {
             if (TrainerName != gen7Baseline.OT) Gen7Editor.TrainerName = TrainerName;
@@ -467,7 +479,23 @@ public partial class TrainerEditorViewModel : ViewModelBase, IDisposable
             return;
         }
         if (IsZA) { SaveZaFields(); return; }
-        _sav.OT = TrainerName;
+        if (UsesGbTrainerName)
+        {
+            if (TrainerName != DecodedTrainerName)
+                Gen12ChineseNames.TryEncode(TrainerName, TranslatedSaveNames.TrainerBytes(_sav), GbJapanese, _gbTrainerEncoding);
+        }
+        else if (UsesGen4TrainerName && _sav is SAV4 ds)
+        {
+            if (TrainerName != DecodedTrainerName)
+                Gen4ChineseNames.TryEncode(TrainerName, ds.OriginalTrainerTrash, _gen4TrainerEncoding, ds.MaxStringLengthTrainer);
+        }
+        else if (UsesChineseTrainerName && _sav is SAV3 chineseSave)
+        {
+            if (TrainerName != DecodedTrainerName)
+                Gen3ChineseNames.TryEncode(TrainerName, chineseSave.SmallBlock.OriginalTrainerTrash[..7]);
+        }
+        else if (_sav is not SAV2 || TrainerName != _sav.OT)
+            _sav.OT = TrainerName;
         _sav.Gender = (byte)Gender;
         _sav.Money = Money;
         _sav.SetDisplayID(DisplayTid, DisplaySid);
@@ -484,6 +512,8 @@ public partial class TrainerEditorViewModel : ViewModelBase, IDisposable
         SaveCoordinates();
         SaveCurrencies();
         SaveBattleChateau();
+        if (HasGen2ClockPassword && Gen2ClockPassword.Length != 0)
+            CalculateGen2ClockPasswordCommand.Execute(null);
     }
 
     private void SaveBattleChateau()

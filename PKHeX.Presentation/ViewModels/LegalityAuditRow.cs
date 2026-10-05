@@ -6,10 +6,13 @@ namespace PKHeX.Presentation.ViewModels;
 /// <summary>
 /// One row of the Legality Audit grid: an <see cref="EntitySummary"/> for display plus the
 /// verdict/location/failure text computed by <see cref="LegalityAuditUseCase"/> (the same
-/// <see cref="LegalityAnalysis"/> the editor's legality panel uses, so the verdict never diverges).
+/// <see cref="SaveLegalityCheck"/> the editor's legality panel uses, so the verdict never diverges).
 /// </summary>
 public sealed class LegalityAuditRow : EntitySummary
 {
+    public new string Nickname { get; }
+    public new string OT { get; }
+
     private readonly LegalityAuditEntry _entry;
 
     /// <summary>True if this slot came from the party rather than a box.</summary>
@@ -35,8 +38,11 @@ public sealed class LegalityAuditRow : EntitySummary
     /// <summary>The full standard PKHeX legality report text, identical to the editor's legality panel.</summary>
     public string ReportText => _entry.ReportText;
 
-    public LegalityAuditRow(LegalityAuditEntry entry, GameStrings strings) : base(entry.Entity, strings)
+    public LegalityAuditRow(LegalityAuditEntry entry, GameStrings strings, SaveFile? save = null, AppSettings? settings = null) : base(entry.Entity, strings)
     {
+        var nameSettings = settings ?? new AppSettings();
+        Nickname = save is null ? base.Nickname : Gen4ChineseNames.Nickname(entry.Entity, save, nameSettings);
+        OT = save is null ? base.OT : Gen4ChineseNames.OriginalTrainer(entry.Entity, save, nameSettings);
         _entry = entry;
     }
 }

@@ -54,6 +54,48 @@
 <Border BorderBrush="{DynamicResource ThemeBorderMutedBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,16">
                     <StackPanel Spacing="{DynamicResource UiDensityViewStackSpacing}">
                         <TextBlock Text="{loc:Loc Settings_EditorBehavior}" FontSize="13" FontWeight="SemiBold" />
+                        <TextBlock Text="{loc:Loc Gen1Names_Label}" TextWrapping="Wrap" />
+                        <ComboBox x:Name="Gen1NameEncodingPicker" SelectedIndex="{Binding Gen1NameEncoding}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc Gen1Names_Label}">
+                            <ComboBoxItem Content="{loc:Loc Gen3Names_Official}" />
+                            <ComboBoxItem Content="{loc:Loc Gen1Names_CKN}" />
+                            <ComboBoxItem Content="{loc:Loc Gen1Names_US}" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Loc Gen2Names_Label}" TextWrapping="Wrap" />
+                        <ComboBox x:Name="Gen2NameEncodingPicker" SelectedIndex="{Binding Gen2NameEncoding}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc Gen2Names_Label}">
+                            <ComboBoxItem Content="{loc:Loc Gen12Names_Official}" />
+                            <ComboBoxItem Content="{loc:Loc Gen2Names_Korean}" />
+                            <ComboBoxItem Content="{loc:Loc Gen2Names_US}" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Loc Gen3Names_Label}" TextWrapping="Wrap" />
+                        <ComboBox x:Name="Gen3NameEncodingPicker" SelectedIndex="{Binding Gen3NameEncoding}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc Gen3Names_Label}">
+                            <ComboBoxItem Content="{loc:Loc Gen3Names_Official}" />
+                            <ComboBoxItem Content="{loc:Loc Gen3Names_US}" />
+                        </ComboBox>
+                        <ToggleSwitch x:Name="IgnoreGen3NameTrashErrorsToggle" Content="{loc:Loc Gen3Trash_Label}" IsChecked="{Binding IgnoreGen3NameTrashErrors}" OnContent="{loc:Loc Common_On}" OffContent="{loc:Loc Common_Off}" AutomationProperties.Name="{loc:Loc Gen3Trash_Label}" />
+                        <TextBlock Text="{loc:Loc Gen3Trash_Help}" TextWrapping="Wrap" FontSize="11" />
+                        <TextBlock Text="{loc:Loc Gen3NgcNames_Label}" TextWrapping="Wrap" />
+                        <ComboBox x:Name="Gen3NgcNameEncodingPicker" SelectedIndex="{Binding Gen3NgcNameEncoding}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc Gen3NgcNames_Label}">
+                            <ComboBoxItem Content="{loc:Loc Gen56Names_Official}" />
+                            <ComboBoxItem Content="{loc:Loc Gen3NgcNames_Chinese}" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Loc Gen3NgcNames_Help}" TextWrapping="Wrap" FontSize="11" />
+                        <TextBlock Text="{loc:Loc Gen4Names_Label}" TextWrapping="Wrap" />
+                        <ComboBox x:Name="Gen4NameEncodingPicker" SelectedIndex="{Binding Gen4NameEncoding}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc Gen4Names_Label}">
+                            <ComboBoxItem Content="{loc:Loc Gen12Names_Official}" />
+                            <ComboBoxItem Content="{loc:Loc Gen4Names_YYJOY}" />
+                            <ComboBoxItem Content="{loc:Loc Gen4Names_Xzonn}" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Loc Gen5Names_Label}" TextWrapping="Wrap" />
+                        <ComboBox x:Name="Gen5NameEncodingPicker" SelectedIndex="{Binding Gen5NameEncoding}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc Gen5Names_Label}">
+                            <ComboBoxItem Content="{loc:Loc Gen56Names_Official}" />
+                            <ComboBoxItem Content="{loc:Loc Gen56Names_Chinese}" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Loc Gen6Names_Label}" TextWrapping="Wrap" />
+                        <ComboBox x:Name="Gen6NameEncodingPicker" SelectedIndex="{Binding Gen6NameEncoding}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc Gen6Names_Label}">
+                            <ComboBoxItem Content="{loc:Loc Gen56Names_Official}" />
+                            <ComboBoxItem Content="{loc:Loc Gen56Names_Chinese}" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Loc Gen56Names_Help}" TextWrapping="Wrap" FontSize="11" />
                         <Grid ColumnDefinitions="*,150" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                             <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="2"><TextBlock Text="{loc:Loc Settings_UpdatePokedex}" FontSize="11" FontWeight="Normal" TextWrapping="Wrap" VerticalAlignment="Center" /></StackPanel>
                             <ToggleSwitch FontSize="11" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" IsChecked="{Binding SetUpdateDex}" OnContent="{loc:Loc Common_On}" OffContent="{loc:Loc Common_Off}" AutomationProperties.Name="{loc:Loc Settings_UpdatePokedex}" ToolTip.Tip="{loc:Loc Settings_UpdatePokedex_Desc}" />

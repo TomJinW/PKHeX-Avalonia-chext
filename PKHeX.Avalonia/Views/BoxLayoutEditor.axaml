@@ -28,6 +28,8 @@
                     <Button Content="{loc:Loc Common_Save}" Command="{Binding SaveCommand}" Classes="accent" />
                 </StackPanel>
 
+                <TextBlock DockPanel.Dock="Bottom" Text="{loc:Loc BoxNames_EncodingInvalid}" IsVisible="{Binding HasNameError}" TextWrapping="Wrap" Margin="0,8" />
+
                 <ScrollViewer>
                     <Border Classes="editor-section-padded" Padding="16">
                         <ItemsControl ItemsSource="{Binding Boxes}">

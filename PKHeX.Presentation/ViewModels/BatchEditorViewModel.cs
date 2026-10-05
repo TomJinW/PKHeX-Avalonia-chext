@@ -11,6 +11,7 @@ namespace PKHeX.Presentation.ViewModels;
 public partial class BatchEditorViewModel : ViewModelBase, IDisposable
 {
     private readonly SaveFile _sav;
+    private readonly AppSettings _nameSettings;
     private readonly IDialogService _dialogService;
     private readonly UndoRedoService _undoRedo;
     private readonly List<UndoRedoService.BatchToken> _batchTokens = [];
@@ -27,9 +28,10 @@ public partial class BatchEditorViewModel : ViewModelBase, IDisposable
         SaveFile sav,
         IDialogService dialogService,
         UndoRedoService? undoRedo = null,
-        IUiDispatcher? uiDispatcher = null)
+        IUiDispatcher? uiDispatcher = null, AppSettings? settings = null)
     {
         _sav = sav;
+        _nameSettings = settings ?? new AppSettings();
         _dialogService = dialogService;
         _undoRedo = undoRedo ?? new UndoRedoService();
         _uiDispatcher = uiDispatcher;
@@ -219,6 +221,10 @@ public partial class BatchEditorViewModel : ViewModelBase, IDisposable
         {
             // The save or editor state changed while the background plan was being built.
         }
+        catch (TranslatedBatchNameException) when (!_disposed)
+        {
+            Results = PKHeX.Presentation.Localization.LocalizedStrings.Instance["BatchNames_Invalid"];
+        }
         catch (Exception ex) when (!_disposed)
         {
             Results = $"Error: {ex.Message}";
@@ -366,7 +372,7 @@ public partial class BatchEditorViewModel : ViewModelBase, IDisposable
         {
             // A newer edit or undo/redo request superseded this preview.
         }
-        catch
+        catch (Exception ex)
         {
             PostToUi(() =>
             {
@@ -375,6 +381,8 @@ public partial class BatchEditorViewModel : ViewModelBase, IDisposable
                     return;
 
                 AffectedCount = 0;
+                if (ex is TranslatedBatchNameException)
+                    Results = PKHeX.Presentation.Localization.LocalizedStrings.Instance["BatchNames_Invalid"];
                 ResetBatchCommand.NotifyCanExecuteChanged();
             });
         }
@@ -455,6 +463,13 @@ public partial class BatchEditorViewModel : ViewModelBase, IDisposable
         if (sets.Length == 0)
             return null;
 
+        var nameSettings = new AppSettings
+        {
+            Gen1NameEncoding = _nameSettings.GetNameEncoding(1),
+            Gen2NameEncoding = _nameSettings.GetNameEncoding(2),
+            Gen3ChineseNamesEnabled = _nameSettings.Gen3ChineseNamesEnabled,
+            Gen4NameEncoding = _nameSettings.Gen4NameEncoding,
+        };
         var editor = new EntityBatchProcessor();
         var changes = new List<PlannedChange>();
         foreach (var target in GetTargetSlots(editBoxes, editParty))
@@ -468,9 +483,11 @@ public partial class BatchEditorViewModel : ViewModelBase, IDisposable
             var working = target.Pokemon.Clone();
             var modified = false;
             foreach (var set in sets)
-                modified |= editor.Process(working, set.Filters, set.Instructions);
+                modified |= TranslatedBatchNames.Process(editor, working, _sav, nameSettings, set);
 
-            if (modified && !working.Data.SequenceEqual(original.Data))
+            if (modified && (!working.Data.SequenceEqual(original.Data)
+                || !working.NicknameTrash.SequenceEqual(original.NicknameTrash)
+                || !working.OriginalTrainerTrash.SequenceEqual(original.OriginalTrainerTrash)))
                 changes.Add(new PlannedChange(target.Slot, working));
         }
 

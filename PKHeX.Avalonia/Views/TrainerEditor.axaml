@@ -35,6 +35,7 @@
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="{loc:Loc TrainerEditor_TrainerName}" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="12"/>
                                         <TextBox Text="{Binding TrainerName}" MaxLength="12" />
+                                        <TextBlock Text="{Binding TrainerNameEncodingError}" IsVisible="{Binding !IsTrainerNameEncodingValid}" TextWrapping="Wrap" FontSize="11" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
                                         <TextBlock Text="{loc:Loc TrainerEditor_Gender}" FontWeight="SemiBold" Margin="0,0,0,4" FontSize="12"/>
@@ -269,6 +270,16 @@
                         </StackPanel>
                     </Border>
                 </Grid>
+
+                <Border x:Name="Gen2ClockSection" Classes="editor-section" IsVisible="{Binding HasGen2Clock}">
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Text="{loc:Loc Gen2Clock_Title}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Button x:Name="CalculateGen2ClockPasswordButton" IsVisible="{Binding HasGen2ClockPassword}" Content="{loc:Loc Gen2Clock_Calculate}" Command="{Binding CalculateGen2ClockPasswordCommand}" ToolTip.Tip="{loc:Loc Gen2Clock_Help}" Padding="8,4" Margin="0,0,6,0" />
+                        <TextBox x:Name="Gen2ClockPasswordField" IsVisible="{Binding HasGen2ClockPassword}" Text="{Binding Gen2ClockPassword, Mode=OneWay}" IsReadOnly="True" Width="80" VerticalContentAlignment="Center" Margin="0,0,12,0" AutomationProperties.Name="{loc:Loc Gen2Clock_Password}" />
+                        <Button x:Name="ResetGen2ClockButton" Content="{loc:Loc Gen2Clock_Reset}" Command="{Binding ResetGen2ClockCommand}" Padding="8,4" Margin="0,0,8,0" />
+                        <TextBlock Text="{Binding Gen2ClockStatus}" VerticalAlignment="Center" FontSize="11" />
+                    </WrapPanel>
+                </Border>
 
             </StackPanel>
         </ScrollViewer>

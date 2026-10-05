@@ -15,7 +15,7 @@ public partial class MainWindowViewModel
 
         if (_livingDexGenerator is null)
         {
-            _livingDexGenerator = new LivingDexGeneratorViewModel(CurrentSave, _livingDexService, _undoRedo);
+            _livingDexGenerator = new LivingDexGeneratorViewModel(CurrentSave, _livingDexService, _undoRedo, _settings);
             _livingDexGenerator.BoxesUpdated += OnLivingDexBoxesUpdated;
         }
 

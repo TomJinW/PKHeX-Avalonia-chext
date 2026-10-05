@@ -70,7 +70,7 @@ public partial class BoxReportViewModel : ViewModelBase
             var pk = data[i];
             if (pk.Species == 0 || !pk.Valid)
                 continue;
-            rows.Add(new BoxReportRow(pk, strings, i / slotsPerBox, i % slotsPerBox));
+            rows.Add(new BoxReportRow(pk, strings, i / slotsPerBox, i % slotsPerBox, _sav, _settings));
         }
 
         _allRows = rows.ToArray();

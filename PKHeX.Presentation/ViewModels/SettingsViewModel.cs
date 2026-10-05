@@ -77,6 +77,23 @@ public partial class SettingsViewModel : ViewModelBase, ICloseableDialog
     [ObservableProperty] private bool _showChangelog;
     [ObservableProperty] private bool _checkForUpdatesOnStartup;
 
+    [ObservableProperty] private int _gen4NameEncoding;
+    [ObservableProperty] private int _gen3NgcNameEncoding;
+    [ObservableProperty] private int _gen5NameEncoding;
+    [ObservableProperty] private int _gen6NameEncoding;
+    [ObservableProperty] private bool _ignoreGen3NameTrashErrors;
+    [ObservableProperty] private int _gen1NameEncoding;
+    [ObservableProperty] private int _gen2NameEncoding;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Gen3NameEncoding))]
+    private bool _gen3ChineseNamesEnabled;
+
+    public int Gen3NameEncoding
+    {
+        get => Gen3ChineseNamesEnabled ? 1 : 0;
+        set => Gen3ChineseNamesEnabled = value == 1;
+    }
+
     // Backup
     [ObservableProperty] private bool _bakEnabled;
     [ObservableProperty] private bool _bakPrompt;
@@ -128,6 +145,15 @@ public partial class SettingsViewModel : ViewModelBase, ICloseableDialog
         ShowChangelog = _settings.Startup.ShowChangelogOnUpdate;
         CheckForUpdatesOnStartup = _settings.Startup.CheckForUpdatesOnStartup;
 
+        Gen1NameEncoding = _settings.GetNameEncoding(1) switch { PKHeX.Application.Services.Gen12NameEncoding.CknGb2312 => 1, PKHeX.Application.Services.Gen12NameEncoding.SimplifiedChinese => 2, _ => 0 };
+        Gen2NameEncoding = _settings.GetNameEncoding(2) switch { PKHeX.Application.Services.Gen12NameEncoding.KoreanChinese => 1, PKHeX.Application.Services.Gen12NameEncoding.SimplifiedChinese => 2, _ => 0 };
+        Gen3ChineseNamesEnabled = _settings.Gen3ChineseNamesEnabled;
+        IgnoreGen3NameTrashErrors = _settings.IgnoreGen3NameTrashErrors;
+        Gen4NameEncoding = (int)_settings.Gen4NameEncoding;
+        Gen3NgcNameEncoding = _settings.Gen3NgcChineseNamesEnabled ? 1 : 0;
+        Gen5NameEncoding = _settings.Gen5ChineseNamesEnabled ? 1 : 0;
+        Gen6NameEncoding = _settings.Gen6ChineseNamesEnabled ? 1 : 0;
+
         BakEnabled = _settings.Backup.BAKEnabled;
         BakPrompt = _settings.Backup.BAKPrompt;
 
@@ -155,6 +181,15 @@ public partial class SettingsViewModel : ViewModelBase, ICloseableDialog
         _settings.Startup.ForceHaXOnLaunch = ForceHaX;
         _settings.Startup.ShowChangelogOnUpdate = ShowChangelog;
         _settings.Startup.CheckForUpdatesOnStartup = CheckForUpdatesOnStartup;
+
+        _settings.Gen3ChineseNamesEnabled = Gen3ChineseNamesEnabled;
+        _settings.IgnoreGen3NameTrashErrors = IgnoreGen3NameTrashErrors;
+        _settings.Gen4NameEncoding = Gen4NameEncoding is >= 0 and <= 2 ? (Gen4NameEncoding)Gen4NameEncoding : PKHeX.Application.Services.Gen4NameEncoding.Xzonn;
+        _settings.Gen3NgcChineseNamesEnabled = Gen3NgcNameEncoding == 1;
+        _settings.Gen5ChineseNamesEnabled = Gen5NameEncoding == 1;
+        _settings.Gen6ChineseNamesEnabled = Gen6NameEncoding == 1;
+        _settings.Gen1NameEncoding = Gen1NameEncoding switch { 1 => PKHeX.Application.Services.Gen12NameEncoding.CknGb2312, 2 => PKHeX.Application.Services.Gen12NameEncoding.SimplifiedChinese, _ => PKHeX.Application.Services.Gen12NameEncoding.Official };
+        _settings.Gen2NameEncoding = Gen2NameEncoding switch { 1 => PKHeX.Application.Services.Gen12NameEncoding.KoreanChinese, 2 => PKHeX.Application.Services.Gen12NameEncoding.SimplifiedChinese, _ => PKHeX.Application.Services.Gen12NameEncoding.Official };
 
         _settings.Backup.BAKEnabled = BakEnabled;
         _settings.Backup.BAKPrompt = BakPrompt;

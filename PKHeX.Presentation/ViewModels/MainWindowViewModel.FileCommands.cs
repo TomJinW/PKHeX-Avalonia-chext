@@ -177,6 +177,7 @@ public partial class MainWindowViewModel
     {
         if (CurrentPokemonEditor is null) return;
 
+        if (!CheckEditorNameEncoding()) return;
         var text = new ExportShowdownSetUseCase().Execute(CurrentPokemonEditor.PreparePKM());
         if (text is null) return;
 
@@ -188,6 +189,7 @@ public partial class MainWindowViewModel
     {
         if (CurrentSave is null || CurrentPokemonEditor is null) return;
 
+        if (!CheckEditorNameEncoding()) return;
         var pk = CurrentPokemonEditor.PreparePKM();
         if (pk.Species == 0)
         {
@@ -343,7 +345,7 @@ public partial class MainWindowViewModel
 
         if (_legalityAudit is null)
         {
-            _legalityAudit = new LegalityAuditViewModel(CurrentSave, _dialogService);
+            _legalityAudit = new LegalityAuditViewModel(CurrentSave, _dialogService, _settings);
             _legalityAudit.RowActivated += row =>
             {
                 if (row.IsParty)

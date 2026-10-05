@@ -13,6 +13,7 @@ namespace PKHeX.Presentation.ViewModels;
 public partial class PartyViewerViewModel : ViewModelBase
 {
     private readonly SaveFile _sav;
+    private readonly AppSettings _nameSettings;
     private readonly ISpriteRenderer _spriteRenderer;
     private readonly ISlotService? _slotService;
     private readonly Guid _sessionId;
@@ -46,9 +47,10 @@ public partial class PartyViewerViewModel : ViewModelBase
     /// </summary>
     public Guid SessionId => _sessionId;
 
-    public PartyViewerViewModel(SaveFile sav, ISpriteRenderer spriteRenderer, ISlotService? slotService = null, IDialogService? dialogService = null, bool haXMode = false, Func<int>? getCurrentBox = null, IWindowService? windowService = null)
+    public PartyViewerViewModel(SaveFile sav, ISpriteRenderer spriteRenderer, ISlotService? slotService = null, IDialogService? dialogService = null, bool haXMode = false, Func<int>? getCurrentBox = null, IWindowService? windowService = null, AppSettings? settings = null)
     {
         _sav = sav;
+        _nameSettings = settings ?? new AppSettings();
         _spriteRenderer = spriteRenderer;
         _slotService = slotService;
         var sessionId = slotService?.SessionId ?? Guid.Empty;
@@ -93,7 +95,7 @@ public partial class PartyViewerViewModel : ViewModelBase
                 Sprite = _spriteRenderer.GetSprite(pk),
                 IsEmpty = isEmpty,
                 IsShiny = !isEmpty && pk.IsShiny,
-                Nickname = isEmpty ? string.Empty : pk.Nickname,
+                Nickname = isEmpty ? string.Empty : Gen4ChineseNames.Nickname(pk, _sav, _nameSettings),
                 SpeciesName = isEmpty ? string.Empty : StringResourceLookup.Species(pk.Species),
                 Level = pk.CurrentLevel,
                 Gender = (byte)pk.Gender,
@@ -103,7 +105,7 @@ public partial class PartyViewerViewModel : ViewModelBase
                 CurrentHp = (ushort)pk.Stat_HPCurrent,
                 MaxHp = (ushort)pk.Stat_HPMax,
                 ShowdownSummary = isEmpty ? string.Empty : new ShowdownSet(pk).Text,
-                IsLegal = _haXMode || isEmpty || new LegalityAnalysis(pk).Valid,
+                IsLegal = _haXMode || isEmpty || SaveLegalityCheck.IsSlotValid(pk, _sav, _nameSettings.GetNameEncoding(_sav.Generation), _nameSettings.IgnoreGen3NameTrashErrors, _nameSettings.Gen5ChineseNamesEnabled, _nameSettings.Gen6ChineseNamesEnabled, _nameSettings.Gen4NameEncoding, _nameSettings.Gen3NgcChineseNamesEnabled),
                 IsSelected = false
             });
         }

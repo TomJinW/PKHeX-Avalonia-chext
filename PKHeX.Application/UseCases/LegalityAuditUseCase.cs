@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using PKHeX.Core;
+using PKHeX.Application.Services;
 
 namespace PKHeX.Application.UseCases;
 
@@ -11,7 +12,7 @@ namespace PKHeX.Application.UseCases;
 public readonly record struct LegalityAuditProgress(int Completed, int Total);
 
 /// <summary>
-/// One audited slot: identity/location info plus the exact <see cref="LegalityAnalysis"/> outcome,
+/// One audited slot: identity/location info plus the save-scoped <see cref="SaveLegalityCheck"/> outcome,
 /// so the result never diverges from what the single-Pokémon editor's legality panel would show.
 /// </summary>
 public sealed class LegalityAuditEntry
@@ -32,19 +33,18 @@ public sealed class LegalityAuditEntry
     public bool Valid { get; }
 
     /// <summary>
-    /// The standard PKHeX legality report text for this entity, i.e. <see cref="LegalityFormatting.Report(LegalityAnalysis, bool)"/>
-    /// on the exact same <see cref="LegalityAnalysis"/> used to compute <see cref="Valid"/>.
+    /// The report from the same save-scoped check used to compute <see cref="Valid"/>.
     /// </summary>
     public string ReportText { get; }
 
-    public LegalityAuditEntry(PKM pk, LegalityAnalysis la, bool isParty, int box, int slot)
+    public LegalityAuditEntry(PKM pk, SaveLegalityResult la, bool isParty, int box, int slot)
     {
         Entity = pk;
         IsParty = isParty;
         Box = box;
         Slot = slot;
         Valid = la.Valid;
-        ReportText = la.Report();
+        ReportText = la.ReportText;
     }
 
     /// <summary>Single-line, semicolon-joined rendering of <see cref="ReportText"/> for grid/CSV display.</summary>
@@ -53,13 +53,13 @@ public sealed class LegalityAuditEntry
 
 /// <summary>
 /// Scans every occupied party and box slot of a save file, running each through the same
-/// <see cref="LegalityAnalysis"/> code path (same constructor arguments) as the single-Pokémon
+/// <see cref="SaveLegalityCheck"/> code path (same save and codec) as the single-Pokémon
 /// editor's legality panel, so audit verdicts can never diverge from the editor.
 /// Supports cooperative cancellation and progress reporting so callers can run it off the UI thread.
 /// </summary>
 public sealed class LegalityAuditUseCase
 {
-    public IReadOnlyList<LegalityAuditEntry> Execute(SaveFile sav, IProgress<LegalityAuditProgress>? progress = null, CancellationToken cancellationToken = default)
+    public IReadOnlyList<LegalityAuditEntry> Execute(SaveFile sav, IProgress<LegalityAuditProgress>? progress = null, CancellationToken cancellationToken = default, Gen12NameEncoding nameEncoding = Gen12NameEncoding.Official, bool ignoreGen3NameTrashErrors = false, bool gen5ChineseNames = false, bool gen6ChineseNames = false, Gen4NameEncoding gen4Encoding = Gen4NameEncoding.Official, bool gen3NgcChineseNames = false)
     {
         var boxData = sav.BoxData;
         var slotsPerBox = sav.BoxSlotCount;
@@ -76,7 +76,7 @@ public sealed class LegalityAuditUseCase
             var pk = boxData[i];
             if (pk.Species != 0)
             {
-                var la = new LegalityAnalysis(pk, sav.Personal);
+                var la = SaveLegalityCheck.Evaluate(pk, sav, nameEncoding, ignoreGen3NameTrashErrors, gen5ChineseNames, gen6ChineseNames, gen4Encoding, gen3NgcChineseNames);
                 results.Add(new LegalityAuditEntry(pk, la, isParty: false, box: i / slotsPerBox, slot: i % slotsPerBox));
             }
 
@@ -93,7 +93,7 @@ public sealed class LegalityAuditUseCase
 
             if (pk.Species != 0)
             {
-                var la = new LegalityAnalysis(pk, sav.Personal);
+                var la = SaveLegalityCheck.Evaluate(pk, sav, nameEncoding, ignoreGen3NameTrashErrors, gen5ChineseNames, gen6ChineseNames, gen4Encoding, gen3NgcChineseNames);
                 results.Add(new LegalityAuditEntry(pk, la, isParty: true, box: 0, slot: i));
             }
 

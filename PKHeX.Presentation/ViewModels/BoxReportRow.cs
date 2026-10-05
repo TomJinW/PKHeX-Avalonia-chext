@@ -8,6 +8,9 @@ namespace PKHeX.Presentation.ViewModels;
 /// </summary>
 public sealed class BoxReportRow : EntitySummary
 {
+    public new string Nickname { get; }
+    public new string OT { get; }
+
     /// <summary>Zero-based box index of the source slot.</summary>
     public int Box { get; }
 
@@ -26,8 +29,11 @@ public sealed class BoxReportRow : EntitySummary
     public int NumericSPD => int.Parse(SPD);
     public int NumericSPE => int.Parse(SPE);
 
-    public BoxReportRow(PKM pk, GameStrings strings, int box, int slot) : base(pk, strings)
+    public BoxReportRow(PKM pk, GameStrings strings, int box, int slot, SaveFile? save = null, AppSettings? settings = null) : base(pk, strings)
     {
+        var nameSettings = settings ?? new AppSettings();
+        Nickname = save is null ? base.Nickname : Gen4ChineseNames.Nickname(pk, save, nameSettings);
+        OT = save is null ? base.OT : Gen4ChineseNames.OriginalTrainer(pk, save, nameSettings);
         Box = box;
         Slot = slot;
     }

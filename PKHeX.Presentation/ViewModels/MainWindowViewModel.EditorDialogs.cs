@@ -41,6 +41,12 @@ public partial class MainWindowViewModel
         var vm = new SettingsViewModel(_settings, _settingsStore, _themeService, _uiDensityService, _languageService, _updateCoordinator);
         await _windowService.ShowDialogAsync(vm, T("Dialog_Settings"));
         RefreshThemeSelection();
+        CurrentPokemonEditor?.RefreshNameEncoding();
+        TrainerEditor?.RefreshNameEncoding();
+        _boxReport?.Refresh();
+        if (_legalityAudit is { IsRunning: false } audit)
+            await audit.RunCommand.ExecuteAsync(null);
+        OnPropertyChanged(nameof(CurrentTrainerName));
 
         // The sprite preference may have changed; re-apply the style and refresh open views.
         if (CurrentSave is not null)
@@ -74,7 +80,7 @@ public partial class MainWindowViewModel
     private async Task OpenBatchEditorAsync()
     {
         if (CurrentSave is null) return;
-        var vm = new BatchEditorViewModel(CurrentSave, _dialogService, _undoRedo, _uiDispatcher);
+        var vm = new BatchEditorViewModel(CurrentSave, _dialogService, _undoRedo, _uiDispatcher, _settings);
         vm.BatchEditCompleted += OnBatchEditCompleted;
         try
         {
@@ -263,7 +269,7 @@ public partial class MainWindowViewModel
     {
         if (CurrentSave is null) return;
         await _windowService.ShowDialogAsync(
-            new BoxLayoutEditorViewModel(CurrentSave),
+            new BoxLayoutEditorViewModel(CurrentSave, _settings),
             T("Dialog_BoxLayoutEditor"));
     }
 

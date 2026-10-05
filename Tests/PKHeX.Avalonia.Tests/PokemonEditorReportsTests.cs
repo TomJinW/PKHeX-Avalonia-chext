@@ -94,7 +94,7 @@ public class PokemonEditorReportsTests
             Language = (int)LanguageID.English,
         };
         pkm.ClearNickname();
-        var (vm, _, _) = TestHelpers.CreateTestViewModel(pkm, sav);
+        var (vm, _, _) = TestHelpers.CreateTestViewModel(pkm, sav, settings: new AppSettings { Gen12NameEncoding = Gen12NameEncoding.Official });
         var defaultName = SpeciesName.GetSpeciesNameGeneration((ushort)Species.Machop, vm.Language, 1);
 
         vm.Nickname = defaultName;
@@ -115,7 +115,7 @@ public class PokemonEditorReportsTests
     public void Gen1_CreatingSpeciesThenEnteringItsDefaultName_RoundTripsAsDefaultName()
     {
         var sav = new SAV1();
-        var (vm, _, _) = TestHelpers.CreateTestViewModel(sav.BlankPKM, sav);
+        var (vm, _, _) = TestHelpers.CreateTestViewModel(sav.BlankPKM, sav, settings: new AppSettings { Gen12NameEncoding = Gen12NameEncoding.Official });
 
         vm.Species = (int)Species.Machop;
         var defaultName = SpeciesName.GetSpeciesNameGeneration((ushort)Species.Machop, sav.Language, 1);

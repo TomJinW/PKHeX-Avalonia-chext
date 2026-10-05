@@ -6,6 +6,10 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources/Gen5/DexBackground.bin" />
+    <EmbeddedResource Include="Resources/Gen4/*.txt" />
+    <EmbeddedResource Include="Resources/Gen12/charmap_cn.asm" />
+    <EmbeddedResource Include="Resources/Gen12/*.txt" />
+    <EmbeddedResource Include="Resources/Gen3/PMRSEFRLG_charmap.txt" />
     <EmbeddedResource Include="Resources/Gen7Fashion/*.bin" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
     <ProjectReference Include="..\PKHeX.Core\PKHeX.Core.csproj" />

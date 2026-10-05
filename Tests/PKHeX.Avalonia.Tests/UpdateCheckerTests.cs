@@ -255,6 +255,7 @@ public class MainWindowUpdateCheckTests
             .ReturnsAsync((IReadOnlyList<ReleaseInfo>?)null);
         var windowServiceMock = new Mock<IWindowService>();
         var settings = new AppSettings();
+        settings.Startup.CheckForUpdatesOnStartup = true;
 
         var (vm, _) = Create(updateCheckServiceMock, windowServiceMock, settings);
         await vm.CheckForUpdatesAsync();
@@ -273,6 +274,7 @@ public class MainWindowUpdateCheckTests
             .ReturnsAsync((IReadOnlyList<ReleaseInfo>?)[Release("99.0.0")]);
         var windowServiceMock = new Mock<IWindowService>();
         var settings = new AppSettings();
+        settings.Startup.CheckForUpdatesOnStartup = true;
 
         var (vm, _) = Create(updateCheckServiceMock, windowServiceMock, settings);
         await vm.CheckForUpdatesAsync();
@@ -290,6 +292,7 @@ public class MainWindowUpdateCheckTests
             .ReturnsAsync((IReadOnlyList<ReleaseInfo>?)[Release("99.0.0")]);
         var windowServiceMock = new Mock<IWindowService>();
         var settings = new AppSettings();
+        settings.Startup.CheckForUpdatesOnStartup = true;
         settings.Startup.SkippedUpdateVersion = "99.0.0";
 
         var (vm, _) = Create(updateCheckServiceMock, windowServiceMock, settings);
@@ -307,6 +310,7 @@ public class MainWindowUpdateCheckTests
             .ReturnsAsync((IReadOnlyList<ReleaseInfo>?)[Release("99.0.0")]);
         var windowServiceMock = new Mock<IWindowService>();
         var settings = new AppSettings();
+        settings.Startup.CheckForUpdatesOnStartup = true;
 
         var (vm, _) = Create(updateCheckServiceMock, windowServiceMock, settings);
         await vm.CheckForUpdatesAsync();
@@ -404,6 +408,7 @@ public class UpdateCheckCoordinatorTests
         svc.Setup(s => s.GetReleasesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync((IReadOnlyList<ReleaseInfo>?)[Release("v99.0.0")]);
         var settings = new AppSettings();
+        settings.Startup.CheckForUpdatesOnStartup = true;
         settings.Startup.SkippedUpdateVersion = "99.0.0";
         var coordinator = Create(svc, settings);
 

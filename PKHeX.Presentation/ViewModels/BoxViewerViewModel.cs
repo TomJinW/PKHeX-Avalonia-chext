@@ -12,6 +12,7 @@ namespace PKHeX.Presentation.ViewModels;
 public partial class BoxViewerViewModel : ViewModelBase, IBoxNavigator
 {
     private readonly SaveFile _sav;
+    private readonly AppSettings _nameSettings;
     private readonly ISpriteRenderer _spriteRenderer;
     private readonly ISlotService? _slotService;
     private readonly Guid _sessionId;
@@ -68,9 +69,10 @@ public partial class BoxViewerViewModel : ViewModelBase, IBoxNavigator
         SelectedIndex = slot;
     }
 
-    public BoxViewerViewModel(SaveFile sav, ISpriteRenderer spriteRenderer, ISlotService? slotService = null, IWindowService? windowService = null, IDialogService? dialogService = null, bool haXMode = false)
+    public BoxViewerViewModel(SaveFile sav, ISpriteRenderer spriteRenderer, ISlotService? slotService = null, IWindowService? windowService = null, IDialogService? dialogService = null, bool haXMode = false, AppSettings? settings = null)
     {
         _sav = sav;
+        _nameSettings = settings ?? new AppSettings();
         _spriteRenderer = spriteRenderer;
         _slotService = slotService;
         var sessionId = slotService?.SessionId ?? Guid.Empty;
@@ -128,9 +130,7 @@ public partial class BoxViewerViewModel : ViewModelBase, IBoxNavigator
         CurrentBox = box;
         if (_sav.CurrentBox != box)
             _sav.CurrentBox = box;
-        BoxName = _sav is IBoxDetailNameRead r
-            ? r.GetBoxName(box)
-            : BoxDetailNameExtensions.GetDefaultBoxName(box);
+        BoxName = TranslatedSaveNames.BoxName(_sav, box, _nameSettings);
 
         Slots.Clear();
 
@@ -151,7 +151,7 @@ public partial class BoxViewerViewModel : ViewModelBase, IBoxNavigator
                 Sprite = _spriteRenderer.GetSprite(pk),
                 IsEmpty = isEmpty,
                 IsShiny = !isEmpty && pk.IsShiny,
-                Nickname = isEmpty ? string.Empty : pk.Nickname,
+                Nickname = isEmpty ? string.Empty : Gen4ChineseNames.Nickname(pk, _sav, _nameSettings),
                 SpeciesName = isEmpty ? string.Empty : StringResourceLookup.Species(pk.Species),
                 Level = pk.CurrentLevel,
                 Gender = (byte)pk.Gender,
@@ -164,7 +164,7 @@ public partial class BoxViewerViewModel : ViewModelBase, IBoxNavigator
                 Nature = (byte)pk.Nature,
                 NatureName = StringResourceLookup.Nature((int)pk.Nature),
                 ShowdownSummary = isEmpty ? string.Empty : new ShowdownSet(pk).Text,
-                IsLegal = _haXMode || isEmpty || new LegalityAnalysis(pk).Valid,
+                IsLegal = _haXMode || isEmpty || SaveLegalityCheck.IsSlotValid(pk, _sav, _nameSettings.GetNameEncoding(_sav.Generation), _nameSettings.IgnoreGen3NameTrashErrors, _nameSettings.Gen5ChineseNamesEnabled, _nameSettings.Gen6ChineseNamesEnabled, _nameSettings.Gen4NameEncoding, _nameSettings.Gen3NgcChineseNamesEnabled),
                 IsSelected = false,
             };
 

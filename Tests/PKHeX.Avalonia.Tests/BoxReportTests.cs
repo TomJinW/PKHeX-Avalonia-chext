@@ -108,9 +108,9 @@ public class BoxReportTests
         var before = sav.Data.ToArray();
         var vm = new BoxReportViewModel(sav, _dialogServiceMock.Object);
         vm.SelectedRow = vm.Rows[0];
-        vm.SearchText = "Shadow Claw";
+        vm.SearchText = GameInfo.Strings.movelist[421];
         Assert.Single(vm.Rows);
-        vm.SearchText = "Cursed Body";
+        vm.SearchText = GameInfo.Strings.abilitylist[130];
         Assert.Single(vm.Rows);
         vm.SearchText = "missing-value";
         Assert.Empty(vm.Rows);

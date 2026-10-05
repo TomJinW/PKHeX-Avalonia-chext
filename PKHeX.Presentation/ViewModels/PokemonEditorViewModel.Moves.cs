@@ -83,6 +83,7 @@ public partial class PokemonEditorViewModel
     [RelayCommand]
     private async Task ExportShowdown()
     {
+        if (!CheckNameEncoding()) return;
         var pk = PreparePKM();
         var set = new ShowdownSet(pk);
         await _dialogService.SetClipboardTextAsync(set.Text);
@@ -98,6 +99,7 @@ public partial class PokemonEditorViewModel
                 LocalizedStrings.Instance["Common_Cancel"]))
             return;
 
+        if (!CheckNameEncoding()) return;
         var pk = PreparePKM();
         var la = new LegalityAnalysis(pk, _sav.Personal);
         pk.SetRelearnMoves(la);
@@ -122,6 +124,7 @@ public partial class PokemonEditorViewModel
                 LocalizedStrings.Instance["Common_Cancel"]))
             return;
 
+        if (!CheckNameEncoding()) return;
         var pk = PreparePKM();
         pk.SetMoveset(false);
         
@@ -148,6 +151,7 @@ public partial class PokemonEditorViewModel
     {
         if (_pk is not ITechRecord tr) return;
         
+        if (!CheckNameEncoding()) return;
         var pk = PreparePKM();
         tr.SetRecordFlags(pk, TechnicalRecordApplicatorOption.LegalAll);
         LoadFromPKM();

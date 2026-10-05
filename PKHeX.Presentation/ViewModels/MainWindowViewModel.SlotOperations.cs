@@ -213,9 +213,17 @@ public partial class MainWindowViewModel
         if (pk.Species != 0) CurrentPokemonEditor.LoadPKM(pk);
     }
 
+    private bool CheckEditorNameEncoding()
+    {
+        if (CurrentPokemonEditor is null || CurrentPokemonEditor.CheckNameEncoding()) return true;
+        _ = _dialogService.ShowErrorAsync(T("Gen12Names_Label"), CurrentPokemonEditor.NameEncodingError);
+        return false;
+    }
+
     private void OnBoxSetSlot(int box, int slot)
     {
         if (CurrentSave is null || CurrentPokemonEditor is null) return;
+        if (!CheckEditorNameEncoding()) return;
         var prepared = CurrentPokemonEditor.PreparePKM();
         if (!TryGetCompatible(prepared, out var pk))
         {
@@ -248,6 +256,7 @@ public partial class MainWindowViewModel
     private void OnPartySetSlot(int slot)
     {
         if (CurrentSave is null || PartyViewer is null || CurrentPokemonEditor is null) return;
+        if (!CheckEditorNameEncoding()) return;
         var prepared = CurrentPokemonEditor.PreparePKM();
         if (!TryGetCompatible(prepared, out var pk))
         {

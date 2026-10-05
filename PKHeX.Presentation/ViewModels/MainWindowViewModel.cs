@@ -131,7 +131,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public LanguageService LanguageService => _languageService;
 
     public string CurrentGameName => CurrentSave is { } save ? GameInfo.GetVersionName(save.Version) : string.Empty;
-    public string CurrentTrainerName => CurrentSave?.OT ?? string.Empty;
+    public string CurrentTrainerName => CurrentSave is { } save
+        ? TranslatedSaveNames.TrainerName(save, _settings) : string.Empty;
 
     public MainWindowViewModel(
         ISaveFileGateway saveFileService,
@@ -280,11 +281,11 @@ public partial class MainWindowViewModel : ViewModelBase
                 _undoRedo.Initialize(sav);
                 GameInfo.FilteredSources = new FilteredGameDataSource(sav, GameInfo.Sources, IsHaXMode);
 
-                var pokemonEditor = new PokemonEditorViewModel(sav.BlankPKM, sav, _spriteRenderer, _dialogService, _windowService, IsHaXMode);
+                var pokemonEditor = new PokemonEditorViewModel(sav.BlankPKM, sav, _spriteRenderer, _dialogService, _windowService, IsHaXMode, _settings);
                 pokemonEditor.SaveFileDropRequested += OnSaveFileDropRequested;
                 CurrentPokemonEditor = pokemonEditor;
 
-                var boxViewer = new BoxViewerViewModel(sav, _spriteRenderer, _slotService, _windowService, _dialogService, IsHaXMode);
+                var boxViewer = new BoxViewerViewModel(sav, _spriteRenderer, _slotService, _windowService, _dialogService, IsHaXMode, _settings);
                 boxViewer.SlotActivated += OnBoxSlotActivated;
                 boxViewer.ViewSlotRequested += OnBoxViewSlot;
                 boxViewer.SetSlotRequested += OnBoxSetSlot;
@@ -292,7 +293,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 boxViewer.SaveFileDropRequested += OnSaveFileDropRequested;
                 BoxViewer = boxViewer;
 
-                var partyViewer = new PartyViewerViewModel(sav, _spriteRenderer, _slotService, _dialogService, IsHaXMode, () => BoxViewer?.CurrentBox ?? 0, _windowService);
+                var partyViewer = new PartyViewerViewModel(sav, _spriteRenderer, _slotService, _dialogService, IsHaXMode, () => BoxViewer?.CurrentBox ?? 0, _windowService, _settings);
                 partyViewer.SlotActivated += OnPartySlotActivated;
                 partyViewer.ViewSlotRequested += OnPartyViewSlot;
                 partyViewer.SetSlotRequested += OnPartySetSlot;
@@ -300,7 +301,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 PartyViewer = partyViewer;
 
                 TrainerEditor?.Dispose();
-                TrainerEditor = new TrainerEditorViewModel(sav, _dialogService, _imageCodec);
+                TrainerEditor = new TrainerEditorViewModel(sav, _dialogService, _imageCodec, _settings);
                 InventoryEditor = new InventoryEditorViewModel(sav, _spriteRenderer, IsHaXMode);
                 (EventFlagsEditor as IDisposable)?.Dispose();
                 EventFlagsEditor = sav is SAV9ZA za
@@ -309,7 +310,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ? new CategorizedEventEditorViewModel(sav, _dialogService)
                         : new EventFlagsEditorViewModel(sav);
                 MysteryGiftEditor = new MysteryGiftEditorViewModel(sav, _dialogService, _giftRecordProvider, _spriteRenderer);
-                BatchEditor = new BatchEditorViewModel(sav, _dialogService, _undoRedo, _uiDispatcher);
+                BatchEditor = new BatchEditorViewModel(sav, _dialogService, _undoRedo, _uiDispatcher, _settings);
                 BatchEditor.BatchEditCompleted += OnBatchEditCompleted;
             }
             catch (Exception ex)

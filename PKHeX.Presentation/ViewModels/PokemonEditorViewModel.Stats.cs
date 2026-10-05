@@ -115,8 +115,8 @@ public partial class PokemonEditorViewModel
     public int Base_SPD => _pk.PersonalInfo.SPD;
     public int Base_SPE => _pk.PersonalInfo.SPE;
 
-    public int IVTotal => IvHP + IvATK + IvDEF + IvSPA + IvSPD + IvSPE;
-    public int EVTotal => EvHP + EvATK + EvDEF + EvSPA + EvSPD + EvSPE;
+    public int IVTotal => IvHP + IvATK + IvDEF + IvSPA + (UsesLegacyStats ? 0 : IvSPD) + IvSPE;
+    public int EVTotal => EvHP + EvATK + EvDEF + EvSPA + (UsesLegacyStats ? 0 : EvSPD) + EvSPE;
 
     public bool HasCharacteristic => _pk.Characteristic >= 0 && _pk.Characteristic < GameInfo.Strings.characteristics.Length;
     public string CharacteristicText => HasCharacteristic ? GameInfo.Strings.characteristics[_pk.Characteristic] : string.Empty;
@@ -151,18 +151,7 @@ public partial class PokemonEditorViewModel
         if (_isLoading) return; // Don't overwrite _pk during loading
 
         _pk.Stat_Level = (byte)Level;
-        _pk.IV_HP = IvHP;
-        _pk.IV_ATK = IvATK;
-        _pk.IV_DEF = IvDEF;
-        _pk.IV_SPA = IvSPA;
-        _pk.IV_SPD = IvSPD;
-        _pk.IV_SPE = IvSPE;
-        _pk.EV_HP = EvHP;
-        _pk.EV_ATK = EvATK;
-        _pk.EV_DEF = EvDEF;
-        _pk.EV_SPA = EvSPA;
-        _pk.EV_SPD = EvSPD;
-        _pk.EV_SPE = EvSPE;
+        ApplyStatValues();
         if (_pk is IHyperTrain ht)
         {
             ht.HT_HP = HyperTrainedHP;
@@ -184,12 +173,12 @@ public partial class PokemonEditorViewModel
     [RelayCommand]
     private void SetMaxIVs()
     {
-        IvHP = 31;
-        IvATK = 31;
-        IvDEF = 31;
-        IvSPA = 31;
-        IvSPD = 31;
-        IvSPE = 31;
+        IvHP = MaximumIV;
+        IvATK = MaximumIV;
+        IvDEF = MaximumIV;
+        IvSPA = MaximumIV;
+        IvSPD = MaximumIV;
+        IvSPE = MaximumIV;
     }
 
     [RelayCommand]

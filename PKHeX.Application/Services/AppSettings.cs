@@ -31,6 +31,33 @@ public sealed class AppSettings : IProgramSettings
     public EditorBehaviorSettings EditorBehavior { get; set; } = new();
     public List<ReportColumnLayout> BoxReportColumns { get; set; } = [];
 
+    public Gen4NameEncoding Gen4NameEncoding { get; set; } = Gen4NameEncoding.Xzonn;
+    public bool Gen3NgcChineseNamesEnabled { get; set; } = true;
+    public bool Gen5ChineseNamesEnabled { get; set; } = true;
+    public bool Gen6ChineseNamesEnabled { get; set; } = true;
+    public bool IgnoreGen3NameTrashErrors { get; set; }
+    public bool Gen3ChineseNamesEnabled { get; set; } = true;
+    public Gen12NameEncoding Gen12NameEncoding { get; set; } = Gen12NameEncoding.SimplifiedChinese;
+
+    private Gen12NameEncoding? _gen1NameEncoding;
+    private Gen12NameEncoding? _gen2NameEncoding;
+    public Gen12NameEncoding Gen1NameEncoding
+    {
+        get => _gen1NameEncoding ?? Gen12NameEncoding;
+        set => _gen1NameEncoding = value;
+    }
+    public Gen12NameEncoding Gen2NameEncoding
+    {
+        get => _gen2NameEncoding ?? Gen12NameEncoding;
+        set => _gen2NameEncoding = value;
+    }
+    public Gen12NameEncoding GetNameEncoding(byte generation) => generation switch
+    {
+        1 => Gen1NameEncoding is Gen12NameEncoding.CknGb2312 or Gen12NameEncoding.SimplifiedChinese ? Gen1NameEncoding : Gen12NameEncoding.Official,
+        2 => Gen2NameEncoding is Gen12NameEncoding.KoreanChinese or Gen12NameEncoding.SimplifiedChinese ? Gen2NameEncoding : Gen12NameEncoding.Official,
+        _ => Gen12NameEncoding.Official,
+    };
+
     public string DisplayLanguage { get; set; } = "en";
 
     /// <summary>
@@ -81,7 +108,7 @@ public sealed class AppSettings : IProgramSettings
         public bool ForceHaXOnLaunch { get; set; } = false;
 
         /// <summary>Whether to query the GitHub Releases API for a newer version at startup.</summary>
-        public bool CheckForUpdatesOnStartup { get; set; } = true;
+        public bool CheckForUpdatesOnStartup { get; set; } = false;
 
         /// <summary>
         /// Release tag (e.g. "1.26.0") the user chose to skip via "Skip this version" on the update

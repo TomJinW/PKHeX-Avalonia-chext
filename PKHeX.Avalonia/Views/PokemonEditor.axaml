@@ -2,12 +2,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:PKHeX.Presentation.ViewModels;assembly=PKHeX.Presentation"
              xmlns:loc="using:PKHeX.Avalonia.Localization"
+             xmlns:converters="using:PKHeX.Avalonia.Converters"
              xmlns:controls="clr-namespace:PKHeX.Avalonia.Controls"
              x:Class="PKHeX.Avalonia.Views.PokemonEditor"
              x:DataType="vm:PokemonEditorViewModel"
              Focusable="False"
              KeyboardNavigation.IsTabStop="False">
 
+    <UserControl.Resources>
+        <converters:LegacyStatColumnWidthConverter x:Key="LegacyStatColumnWidth" />
+    </UserControl.Resources>
     <UserControl.Styles>
         <!-- Keep the editor on the shared neutral focus treatment. The editor navigation is a
              local composition around the native TabControl so the compact column does not make
@@ -119,6 +123,16 @@
         <Style Selector="ToggleButton#MainDetailsToggle:checked Path">
             <Setter Property="Data" Value="M1 5 L5 1 L9 5" />
         </Style>
+        <Style Selector="NumericUpDown.stats-number.legacy">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="2,0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="ShowButtonSpinner" Value="False" />
+        </Style>
+        <Style Selector="NumericUpDown.stats-number.legacy /template/ TextBox">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="2,0" />
+        </Style>
     </UserControl.Styles>
 
         <!-- AllowDrop lives here (not on the root UserControl): Avalonia's drag/drop target
@@ -161,7 +175,7 @@
                         </Panel>
                     </Button>
                     <Button x:Name="ShinyToggle" Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="6,3" MinHeight="26" VerticalAlignment="Center"
-                            Command="{Binding ToggleShinyCommand}" ToolTip.Tip="{loc:Loc PokemonEditor_ToggleShinyTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_ToggleShinyTooltip}">
+                            Command="{Binding ToggleShinyCommand}" ToolTip.Tip="{Binding ShinyToggleTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_ToggleShinyTooltip}">
                         <Panel>
                             <Path Width="15" Height="15" Stretch="Uniform" IsVisible="{Binding IsShiny}" Data="M10 0 L13 7 L20 7 L15 12 L17 19 L10 15 L3 19 L5 12 L0 7 L7 7 Z" Fill="{DynamicResource ThemeShinyBrush}" />
                             <Path Width="15" Height="15" Stretch="Uniform" IsVisible="{Binding !IsShiny}" Data="M10 0 L13 7 L20 7 L15 12 L17 19 L10 15 L3 19 L5 12 L0 7 L7 7 Z" Stroke="{DynamicResource ThemeTextMutedBrush}" StrokeThickness="1.5" />
@@ -179,7 +193,7 @@
                         <Button x:Name="StatsTabButton" Classes="editor-nav" Classes.selected="{Binding IsStatsEditorSection}" Tag="1" Command="{Binding SelectEditorSectionCommand}" CommandParameter="1"
                                 Content="{loc:Loc PokemonEditor_TabStats}" ToolTip.Tip="{loc:Loc PokemonEditor_TabStats}"
                                 AutomationProperties.Name="{loc:Loc PokemonEditor_TabStats}" />
-                        <Button x:Name="MetTabButton" Classes="editor-nav" Classes.selected="{Binding IsMetEditorSection}" Tag="2" Command="{Binding SelectEditorSectionCommand}" CommandParameter="2"
+                        <Button x:Name="MetTabButton" Classes="editor-nav" Classes.selected="{Binding IsMetEditorSection}" Tag="2" Command="{Binding SelectEditorSectionCommand}" IsVisible="{Binding HasGen2Fields}" CommandParameter="2"
                                 Content="{loc:Loc PokemonEditor_TabMet}" ToolTip.Tip="{loc:Loc PokemonEditor_TabMet}"
                                 AutomationProperties.Name="{loc:Loc PokemonEditor_TabMet}" />
                         <Button x:Name="MovesTabButton" Classes="editor-nav" Classes.selected="{Binding IsMovesEditorSection}" Tag="3" Command="{Binding SelectEditorSectionCommand}" CommandParameter="3"
@@ -189,7 +203,7 @@
                                 Content="{loc:Loc PokemonEditor_TabOtMisc}" ToolTip.Tip="{loc:Loc PokemonEditor_TabOtMisc}"
                                 AutomationProperties.Name="{loc:Loc PokemonEditor_TabOtMisc}" />
                     </UniformGrid>
-                    <Button x:Name="MoreSectionsButton" Grid.Column="1" Classes="editor-more" Classes.selected="{Binding IsAdvancedEditorSection}"
+                    <Button IsVisible="{Binding HasModernFields}" x:Name="MoreSectionsButton" Grid.Column="1" Classes="editor-more" Classes.selected="{Binding IsAdvancedEditorSection}"
                             Content="{loc:Loc CompactUI_MoreSections}"
                             AutomationProperties.Name="{loc:Loc CompactUI_MoreSections}">
                         <Button.Flyout>
@@ -214,22 +228,24 @@
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <StackPanel Spacing="9" Margin="0,8,0,4" Classes="compact-main-form">
                                 <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_Species}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><Grid><controls:FilterableComboBox Classes="compact-select" ItemsSource="{Binding SpeciesList}" SelectedValue="{Binding Species}" HorizontalAlignment="Stretch" Padding="9,5,24,5" AutomationProperties.Name="{loc:Loc PokemonEditor_Species}" /><Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="10" Height="6" Data="M1 1 L5 5 L9 1" Stroke="{DynamicResource ThemeTextMutedBrush}" StrokeThickness="1" IsHitTestVisible="False" /></Grid></Border></Grid>
-                                <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_Nickname}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><TextBox x:Name="NicknameField" Text="{Binding Nickname}" AutomationProperties.Name="{loc:Loc PokemonEditor_Nickname}" /></Border></Grid>
+                                <TextBlock Text="{Binding NameEncodingDescription}" IsVisible="{Binding HasNameEncodingChoice}" TextWrapping="Wrap" FontSize="11" />
+                                <TextBlock Text="{Binding NameEncodingError}" IsVisible="{Binding HasNameEncodingError}" TextWrapping="Wrap" FontSize="11" />
+                                <Grid ColumnDefinitions="71,*" ><Button x:Name="ResetNicknameButton" Content="{loc:Loc PokemonEditor_Nickname}" Command="{Binding ResetNicknameCommand}" ToolTip.Tip="{loc:Loc PokemonEditor_ResetNickname}" FontSize="11" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="0" Foreground="{DynamicResource ThemeTextSecondaryBrush}" VerticalAlignment="Center" Cursor="Hand" /><Border Grid.Column="1"><TextBox x:Name="NicknameField" Text="{Binding Nickname}" AutomationProperties.Name="{loc:Loc PokemonEditor_Nickname}" /></Border></Grid>
                                 <Grid ColumnDefinitions="*,12,*">
                                     <StackPanel Spacing="4"><TextBlock Text="{loc:Loc PokemonEditor_Level}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondaryBrush}" /><NumericUpDown Value="{Binding Level}" Minimum="1" Maximum="100" FormatString="0" ShowButtonSpinner="False" AutomationProperties.Name="{loc:Loc PokemonEditor_Level}" /></StackPanel>
-                                    <Border Grid.Column="2"><StackPanel Spacing="4"><TextBlock Text="{loc:Loc PokemonEditor_Nature}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondaryBrush}" /><ComboBox ItemsSource="{Binding NatureList}" SelectedValue="{Binding Nature}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc PokemonEditor_Nature}" /></StackPanel></Border>
+                                    <Border Grid.Column="2" IsVisible="{Binding HasModernFields}"><StackPanel Spacing="4"><TextBlock Text="{loc:Loc PokemonEditor_Nature}" FontSize="10" Foreground="{DynamicResource ThemeTextSecondaryBrush}" /><ComboBox ItemsSource="{Binding NatureList}" SelectedValue="{Binding Nature}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc PokemonEditor_Nature}" /></StackPanel></Border>
                                 </Grid>
-                                <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_Ability}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding AbilityList}" SelectedValue="{Binding Ability}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding AbilityTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_Ability}" /></Border></Grid>
-                                <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_HeldItem}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><Grid><controls:FilterableComboBox Classes="compact-select" ItemsSource="{Binding ItemList}" SelectedValue="{Binding HeldItem}" HorizontalAlignment="Stretch" Padding="9,5,24,5" ToolTip.Tip="{Binding HeldItemTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_HeldItem}" /><Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="10" Height="6" Data="M1 1 L5 5 L9 1" Stroke="{DynamicResource ThemeTextMutedBrush}" StrokeThickness="1" IsHitTestVisible="False" /></Grid></Border></Grid>
-                                <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_Gender}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding PokemonGenderList}" SelectedValue="{Binding Gender}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc PokemonEditor_Gender}" /></Border></Grid>
+                                <Grid ColumnDefinitions="71,*"  IsVisible="{Binding HasModernFields}"><TextBlock Text="{loc:Loc PokemonEditor_Ability}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding AbilityList}" SelectedValue="{Binding Ability}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding AbilityTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_Ability}" /></Border></Grid>
+                                <Grid ColumnDefinitions="71,*"  IsVisible="{Binding HasGen2Fields}"><TextBlock Text="{loc:Loc PokemonEditor_HeldItem}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><Grid><controls:FilterableComboBox Classes="compact-select" ItemsSource="{Binding ItemList}" SelectedValue="{Binding HeldItem}" HorizontalAlignment="Stretch" Padding="9,5,24,5" ToolTip.Tip="{Binding HeldItemTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_HeldItem}" /><Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Width="10" Height="6" Data="M1 1 L5 5 L9 1" Stroke="{DynamicResource ThemeTextMutedBrush}" StrokeThickness="1" IsHitTestVisible="False" /></Grid></Border></Grid>
+                                <Grid ColumnDefinitions="71,*"  IsVisible="{Binding HasGen2Fields}"><TextBlock Text="{loc:Loc PokemonEditor_Gender}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding PokemonGenderList}" SelectedValue="{Binding Gender}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc PokemonEditor_Gender}" /></Border></Grid>
                                 <Grid ColumnDefinitions="71,*" IsVisible="{Binding HasForms}"><TextBlock Text="{loc:Loc PokemonEditor_Form}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding FormList}" SelectedValue="{Binding Form}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc PokemonEditor_Form}" /></Border></Grid>
                                 <ToggleButton x:Name="MainDetailsToggle" AutomationProperties.Name="{loc:Loc CompactUI_Details}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource ThemeBorderMutedBrush}" Padding="0,6" MinHeight="30">
                                     <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{loc:Loc CompactUI_Details}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" /><Path Grid.Column="1" Width="10" Height="6" Data="M1 1 L5 5 L9 1" Stroke="{DynamicResource ThemeTextMutedBrush}" StrokeThickness="1" /></Grid>
                                 </ToggleButton>
                                 <Border IsVisible="{Binding #MainDetailsToggle.IsChecked}">
                                     <StackPanel Spacing="9" Margin="0,6,0,0">
-                                        <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_Ball}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding BallList}" SelectedValue="{Binding Ball}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding BallTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_Ball}" /></Border></Grid>
-                                        <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_Language}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding LanguageList}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding LanguageTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_Language}" /></Border></Grid>
+                                        <Grid ColumnDefinitions="71,*"  IsVisible="{Binding HasModernFields}"><TextBlock Text="{loc:Loc PokemonEditor_Ball}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding BallList}" SelectedValue="{Binding Ball}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding BallTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_Ball}" /></Border></Grid>
+                                        <Grid ColumnDefinitions="71,*"  IsVisible="{Binding HasModernFields}"><TextBlock Text="{loc:Loc PokemonEditor_Language}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox IsEnabled="{Binding !UsesChineseNames}" ItemsSource="{Binding LanguageList}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" ToolTip.Tip="{Binding LanguageTooltip}" AutomationProperties.Name="{loc:Loc PokemonEditor_Language}" /></Border></Grid>
                                         <Grid ColumnDefinitions="71,*" IsVisible="{Binding ShowStatAlignment}"><TextBlock Text="{loc:Loc PokemonEditor_StatAlignment}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><ComboBox ItemsSource="{Binding NatureList}" SelectedValue="{Binding StatAlignment}" SelectedValueBinding="{Binding Value}" DisplayMemberBinding="{Binding Text}" HorizontalAlignment="Stretch" AutomationProperties.Name="{loc:Loc PokemonEditor_StatAlignment}" /></Border></Grid>
                                         <Grid ColumnDefinitions="71,*" ><TextBlock Text="{loc:Loc PokemonEditor_Exp}" FontSize="11" Foreground="{DynamicResource ThemeTextSecondaryBrush}" TextWrapping="Wrap" VerticalAlignment="Center" /><Border Grid.Column="1"><NumericUpDown Value="{Binding Exp}" Minimum="0" Maximum="10000000" FormatString="0" ShowButtonSpinner="False" AutomationProperties.Name="{loc:Loc PokemonEditor_Exp}" /></Border></Grid>
                                         <Border x:Name="ExpBar"
@@ -251,7 +267,7 @@
                                                          CornerRadius="7"
                                                          MinHeight="0" />
                                         </Border>
-                                        <CheckBox Content="{loc:Loc PokemonEditor_IsEgg}" IsChecked="{Binding IsEgg}" AutomationProperties.Name="{loc:Loc PokemonEditor_IsEgg}" />
+                                        <CheckBox IsVisible="{Binding HasGen2Fields}" Content="{loc:Loc PokemonEditor_IsEgg}" IsChecked="{Binding IsEgg}" AutomationProperties.Name="{loc:Loc PokemonEditor_IsEgg}" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -268,7 +284,11 @@
                                    TextWrapping="Wrap"
                                    Margin="2,0,2,0" />
                         <Border Classes="editor-section">
-                            <Grid ColumnDefinitions="40,40,42,42,30,26" RowDefinitions="Auto,Auto,4,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid x:Name="StatsGrid" RowDefinitions="Auto,Auto,4,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40" /><ColumnDefinition Width="40" /><ColumnDefinition Width="42" />
+                                    <ColumnDefinition Width="{Binding #StatsGrid.((vm:PokemonEditorViewModel)DataContext).UsesLegacyStats, Converter={StaticResource LegacyStatColumnWidth}}" /><ColumnDefinition Width="30" /><ColumnDefinition Width="26" />
+                                </Grid.ColumnDefinitions>
                                 <Grid Grid.Row="9" Grid.ColumnSpan="6" ColumnDefinitions="*,*" Margin="0,8,0,4">
                                     <StackPanel Orientation="Horizontal" Spacing="6"><TextBlock Text="{loc:Loc BoxReportView_IvTotalHeader}" Foreground="{DynamicResource ThemeTextMutedBrush}" /><TextBlock Text="{Binding IVTotal}" FontWeight="SemiBold" /></StackPanel>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"><TextBlock Text="{loc:Loc BoxReportView_EvTotalHeader}" Foreground="{DynamicResource ThemeTextMutedBrush}" /><TextBlock Text="{Binding EVTotal}" FontWeight="SemiBold" /></StackPanel>
@@ -300,63 +320,63 @@
                                 <!-- Compact, fixed-width labels remain aligned at the shell's 360px minimum. -->
                                 <TextBlock x:Name="StatsHeaderStat" Grid.Row="1" Grid.Column="0" Text="{loc:Loc PokemonEditor_ColStat}" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Left" />
                                 <TextBlock x:Name="StatsHeaderBase" Grid.Row="1" Grid.Column="1" Text="{loc:Loc PokemonEditor_ColBase}" FontWeight="Bold" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" />
-                                <TextBlock x:Name="StatsHeaderIVs" Grid.Row="1" Grid.Column="2" Text="{loc:Loc PokemonEditor_ColIVs}" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
+                                <TextBlock x:Name="StatsHeaderIVs" Grid.Row="1" Grid.Column="2" Text="{Binding IvColumnLabel}" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
                                 <TextBlock x:Name="StatsHeaderEVs" Grid.Row="1" Grid.Column="3" Text="{loc:Loc PokemonEditor_ColEVs}" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" />
                                 <TextBlock x:Name="StatsHeaderTotal" Grid.Row="1" Grid.Column="4" Text="Σ" FontWeight="Bold" Opacity="0.6" HorizontalAlignment="Center" ToolTip.Tip="{loc:Loc PokemonEditor_ColTotal}" />
-                                <TextBlock x:Name="StatsHeaderHyperTraining" Grid.Row="1" Grid.Column="5" Text="{loc:Loc PokemonEditor_ColHyperTrainingShort}" FontWeight="Bold" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" ToolTip.Tip="{loc:Loc StatsHyperTrained}" />
+                                <TextBlock x:Name="StatsHeaderHyperTraining" IsVisible="{Binding HasModernFields}" Grid.Row="1" Grid.Column="5" Text="{loc:Loc PokemonEditor_ColHyperTrainingShort}" FontWeight="Bold" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" ToolTip.Tip="{loc:Loc StatsHyperTrained}" />
 
                                 <!-- HP -->
                                 <TextBlock Grid.Row="3" Grid.Column="0" Text="{loc:Loc PokemonEditor_StatHp}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Base_HP}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
-                                <NumericUpDown Grid.Row="3" Grid.Column="2" Value="{Binding IvHP}" Minimum="0" Maximum="31" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding HpIvAutomationName}" />
-                                <NumericUpDown Grid.Row="3" Grid.Column="3" Value="{Binding EvHP}" Minimum="0" Maximum="252" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding HpEvAutomationName}" />
+                                <NumericUpDown Grid.Row="3" Grid.Column="2" IsEnabled="{Binding HasModernFields}" Value="{Binding IvHP}" Minimum="0" Maximum="{Binding MaximumIV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding HpIvAutomationName}" />
+                                <NumericUpDown Grid.Row="3" Grid.Column="3" Value="{Binding EvHP}" Minimum="0" Maximum="{Binding MaximumEV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding HpEvAutomationName}" />
                                 <TextBlock Grid.Row="3" Grid.Column="4" Text="{Binding Stat_HP}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !IsHaXMode}" />
-                                <NumericUpDown Grid.Row="3" Grid.Column="4" Value="{Binding HaXStatHP}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatHp}" />
+                                <NumericUpDown Grid.Row="3" Grid.Column="4" Value="{Binding HaXStatHP}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatHp}" />
                                 <CheckBox Grid.Row="3" Grid.Column="5" IsChecked="{Binding HyperTrainedHP, Mode=TwoWay}" IsEnabled="{Binding CanHyperTrain}" IsVisible="{Binding HasHyperTraining}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.Name="{Binding HyperTrainedHpAutomationName}" />
 
                                 <!-- Atk -->
                                 <TextBlock Grid.Row="4" Grid.Column="0" Text="{loc:Loc PokemonEditor_StatAtk}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Base_ATK}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
-                                <NumericUpDown Grid.Row="4" Grid.Column="2" Value="{Binding IvATK}" Minimum="0" Maximum="31" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding AtkIvAutomationName}" />
-                                <NumericUpDown Grid.Row="4" Grid.Column="3" Value="{Binding EvATK}" Minimum="0" Maximum="252" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding AtkEvAutomationName}" />
+                                <NumericUpDown Grid.Row="4" Grid.Column="2" Value="{Binding IvATK}" Minimum="0" Maximum="{Binding MaximumIV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding AtkIvAutomationName}" />
+                                <NumericUpDown Grid.Row="4" Grid.Column="3" Value="{Binding EvATK}" Minimum="0" Maximum="{Binding MaximumEV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding AtkEvAutomationName}" />
                                 <TextBlock Grid.Row="4" Grid.Column="4" Text="{Binding Stat_ATK}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !IsHaXMode}" />
-                                <NumericUpDown Grid.Row="4" Grid.Column="4" Value="{Binding HaXStatATK}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatAtk}" />
+                                <NumericUpDown Grid.Row="4" Grid.Column="4" Value="{Binding HaXStatATK}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatAtk}" />
                                 <CheckBox Grid.Row="4" Grid.Column="5" IsChecked="{Binding HyperTrainedATK, Mode=TwoWay}" IsEnabled="{Binding CanHyperTrain}" IsVisible="{Binding HasHyperTraining}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.Name="{Binding HyperTrainedAtkAutomationName}" />
 
                                 <!-- Def -->
                                 <TextBlock Grid.Row="5" Grid.Column="0" Text="{loc:Loc PokemonEditor_StatDef}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Base_DEF}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
-                                <NumericUpDown Grid.Row="5" Grid.Column="2" Value="{Binding IvDEF}" Minimum="0" Maximum="31" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding DefIvAutomationName}" />
-                                <NumericUpDown Grid.Row="5" Grid.Column="3" Value="{Binding EvDEF}" Minimum="0" Maximum="252" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding DefEvAutomationName}" />
+                                <NumericUpDown Grid.Row="5" Grid.Column="2" Value="{Binding IvDEF}" Minimum="0" Maximum="{Binding MaximumIV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding DefIvAutomationName}" />
+                                <NumericUpDown Grid.Row="5" Grid.Column="3" Value="{Binding EvDEF}" Minimum="0" Maximum="{Binding MaximumEV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding DefEvAutomationName}" />
                                 <TextBlock Grid.Row="5" Grid.Column="4" Text="{Binding Stat_DEF}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !IsHaXMode}" />
-                                <NumericUpDown Grid.Row="5" Grid.Column="4" Value="{Binding HaXStatDEF}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatDef}" />
+                                <NumericUpDown Grid.Row="5" Grid.Column="4" Value="{Binding HaXStatDEF}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatDef}" />
                                 <CheckBox Grid.Row="5" Grid.Column="5" IsChecked="{Binding HyperTrainedDEF, Mode=TwoWay}" IsEnabled="{Binding CanHyperTrain}" IsVisible="{Binding HasHyperTraining}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.Name="{Binding HyperTrainedDefAutomationName}" />
 
                                 <!-- SpA -->
                                 <TextBlock Grid.Row="6" Grid.Column="0" Text="{loc:Loc PokemonEditor_StatSpa}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Base_SPA}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
-                                <NumericUpDown Grid.Row="6" Grid.Column="2" Value="{Binding IvSPA}" Minimum="0" Maximum="31" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpaIvAutomationName}" />
-                                <NumericUpDown Grid.Row="6" Grid.Column="3" Value="{Binding EvSPA}" Minimum="0" Maximum="252" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpaEvAutomationName}" />
+                                <NumericUpDown Grid.Row="6" Grid.Column="2" Value="{Binding IvSPA}" Minimum="0" Maximum="{Binding MaximumIV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpaIvAutomationName}" />
+                                <NumericUpDown Grid.Row="6" Grid.Column="3" Value="{Binding EvSPA}" Minimum="0" Maximum="{Binding MaximumEV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpaEvAutomationName}" />
                                 <TextBlock Grid.Row="6" Grid.Column="4" Text="{Binding Stat_SPA}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !IsHaXMode}" />
-                                <NumericUpDown Grid.Row="6" Grid.Column="4" Value="{Binding HaXStatSPA}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatSpa}" />
+                                <NumericUpDown Grid.Row="6" Grid.Column="4" Value="{Binding HaXStatSPA}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatSpa}" />
                                 <CheckBox Grid.Row="6" Grid.Column="5" IsChecked="{Binding HyperTrainedSPA, Mode=TwoWay}" IsEnabled="{Binding CanHyperTrain}" IsVisible="{Binding HasHyperTraining}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.Name="{Binding HyperTrainedSpaAutomationName}" />
 
                                 <!-- SpD -->
                                 <TextBlock Grid.Row="7" Grid.Column="0" Text="{loc:Loc PokemonEditor_StatSpd}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding Base_SPD}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
-                                <NumericUpDown Grid.Row="7" Grid.Column="2" Value="{Binding IvSPD}" Minimum="0" Maximum="31" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpdIvAutomationName}" />
-                                <NumericUpDown Grid.Row="7" Grid.Column="3" Value="{Binding EvSPD}" Minimum="0" Maximum="252" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpdEvAutomationName}" />
+                                <NumericUpDown Grid.Row="7" Grid.Column="2" IsEnabled="{Binding HasModernFields}" Value="{Binding IvSPD}" Minimum="0" Maximum="{Binding MaximumIV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpdIvAutomationName}" />
+                                <NumericUpDown Grid.Row="7" Grid.Column="3" IsEnabled="{Binding HasModernFields}" Value="{Binding EvSPD}" Minimum="0" Maximum="{Binding MaximumEV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpdEvAutomationName}" />
                                 <TextBlock Grid.Row="7" Grid.Column="4" Text="{Binding Stat_SPD}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !IsHaXMode}" />
-                                <NumericUpDown Grid.Row="7" Grid.Column="4" Value="{Binding HaXStatSPD}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatSpd}" />
+                                <NumericUpDown Grid.Row="7" Grid.Column="4" Value="{Binding HaXStatSPD}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatSpd}" />
                                 <CheckBox Grid.Row="7" Grid.Column="5" IsChecked="{Binding HyperTrainedSPD, Mode=TwoWay}" IsEnabled="{Binding CanHyperTrain}" IsVisible="{Binding HasHyperTraining}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.Name="{Binding HyperTrainedSpdAutomationName}" />
 
                                 <!-- Spe -->
                                 <TextBlock Grid.Row="8" Grid.Column="0" Text="{loc:Loc PokemonEditor_StatSpe}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding Base_SPE}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
-                                <NumericUpDown Grid.Row="8" Grid.Column="2" Value="{Binding IvSPE}" Minimum="0" Maximum="31" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpeIvAutomationName}" />
-                                <NumericUpDown Grid.Row="8" Grid.Column="3" Value="{Binding EvSPE}" Minimum="0" Maximum="252" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpeEvAutomationName}" />
+                                <NumericUpDown Grid.Row="8" Grid.Column="2" Value="{Binding IvSPE}" Minimum="0" Maximum="{Binding MaximumIV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpeIvAutomationName}" />
+                                <NumericUpDown Grid.Row="8" Grid.Column="3" Value="{Binding EvSPE}" Minimum="0" Maximum="{Binding MaximumEV}" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" AutomationProperties.Name="{Binding SpeEvAutomationName}" />
                                 <TextBlock Grid.Row="8" Grid.Column="4" Text="{Binding Stat_SPE}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !IsHaXMode}" />
-                                <NumericUpDown Grid.Row="8" Grid.Column="4" Value="{Binding HaXStatSPE}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatSpe}" />
+                                <NumericUpDown Grid.Row="8" Grid.Column="4" Value="{Binding HaXStatSPE}" Minimum="0" Maximum="65535" FormatString="0" Classes="compact stats-number" Classes.legacy="{Binding UsesLegacyStats}" HorizontalAlignment="Stretch" Margin="2" IsVisible="{Binding IsHaXMode}" AutomationProperties.Name="{loc:Loc PokemonEditor_StatSpe}" />
                                 <CheckBox Grid.Row="8" Grid.Column="5" IsChecked="{Binding HyperTrainedSPE, Mode=TwoWay}" IsEnabled="{Binding CanHyperTrain}" IsVisible="{Binding HasHyperTraining}" HorizontalAlignment="Center" VerticalAlignment="Center" AutomationProperties.Name="{Binding HyperTrainedSpeAutomationName}" />
                             </Grid>
                         </Border>
@@ -381,11 +401,11 @@
                 </TabItem>
 
                 <!-- Met Tab -->
-                <TabItem Classes="editor-tab" Header="{loc:Loc PokemonEditor_TabMet}">
+                <TabItem Classes="editor-tab" IsVisible="{Binding HasGen2Fields}" Header="{loc:Loc PokemonEditor_TabMet}">
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,8,0,4" Spacing="8">
                             <!-- Origin Game -->
-                            <StackPanel>
+                            <StackPanel IsVisible="{Binding HasModernFields}">
                                     <TextBlock Classes="form-label" Text="{loc:Loc PokemonEditor_OriginGame}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                 <ComboBox ItemsSource="{Binding OriginGameList}"
                                           SelectedValue="{Binding OriginGame}"
@@ -411,7 +431,7 @@
                             <Grid ColumnDefinitions="64,12,*" RowDefinitions="Auto,Auto" RowSpacing="4" VerticalAlignment="Center">
                                 <TextBlock Grid.Row="0" Classes="form-label" Text="{loc:Loc PokemonEditor_MetLevel}" FontWeight="SemiBold" Margin="0" TextWrapping="Wrap" VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="0" Grid.Column="2" IsVisible="{Binding HasMetDate}" Classes="form-label" Text="{loc:Loc PokemonEditor_MetDate}" FontWeight="SemiBold" Margin="0" VerticalAlignment="Center" />
-                                <NumericUpDown Grid.Row="1" Value="{Binding MetLevel}" ShowButtonSpinner="False" Minimum="0" Maximum="100" FormatString="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" AutomationProperties.Name="{loc:Loc PokemonEditor_MetLevel}" />
+                                <NumericUpDown Grid.Row="1" Value="{Binding MetLevel}" ShowButtonSpinner="False" Minimum="0" Maximum="{Binding MaximumMetLevel}" FormatString="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" AutomationProperties.Name="{loc:Loc PokemonEditor_MetLevel}" />
                                 <CalendarDatePicker Grid.Row="1" Grid.Column="2" IsVisible="{Binding HasMetDate}" SelectedDate="{Binding MetDate}" SelectedDateFormat="Short"
                                                     Watermark="{loc:Loc PokemonEditor_SelectDate}"
                                                     ToolTip.Tip="{Binding MetDateTooltip}"
@@ -420,7 +440,7 @@
                             </Grid>
 
                             <!-- Egg Location -->
-                            <StackPanel>
+                            <StackPanel IsVisible="{Binding HasModernFields}">
                                 <TextBlock Classes="form-label" Text="{loc:Loc PokemonEditor_EggLocation}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                 <ComboBox ItemsSource="{Binding EggLocationList}"
                                           SelectedValue="{Binding EggLocation}"
@@ -431,7 +451,7 @@
                             </StackPanel>
 
                             <!-- Egg Date -->
-                            <StackPanel>
+                            <StackPanel IsVisible="{Binding HasModernFields}">
                                 <TextBlock Classes="form-label" Text="{loc:Loc PokemonEditor_EggDate}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                 <CalendarDatePicker SelectedDate="{Binding EggDate}" SelectedDateFormat="Short"
                                                     Watermark="{loc:Loc PokemonEditor_SelectDate}"
@@ -451,7 +471,7 @@
                                 <NumericUpDown Value="{Binding ObedienceLevel}" Minimum="0" Maximum="255" FormatString="0"
                                                AutomationProperties.Name="{loc:Loc Metadata_ObedienceLevel}" />
                             </StackPanel>
-                            <CheckBox Content="{loc:Loc PokemonEditor_FatefulEncounter}" IsChecked="{Binding IsFatefulEncounter}" AutomationProperties.Name="{loc:Loc PokemonEditor_FatefulEncounter}" />
+                            <CheckBox IsVisible="{Binding HasModernFields}" Content="{loc:Loc PokemonEditor_FatefulEncounter}" IsChecked="{Binding IsFatefulEncounter}" AutomationProperties.Name="{loc:Loc PokemonEditor_FatefulEncounter}" />
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -495,7 +515,7 @@
 
                             <!-- Relearn Section -->
                             <!-- Relearn Section -->
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" IsVisible="{Binding HasModernFields}">
                                 <DockPanel>
                                     <TextBlock Text="{loc:Loc PokemonEditor_RelearnMoves}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" />
                                     <Button Content="{loc:Loc PokemonEditor_Suggest}" Command="{Binding SuggestRelearnMovesCommand}"
@@ -558,9 +578,10 @@
                                     <StackPanel Grid.Row="1" Grid.Column="0">
                                         <TextBlock Text="{loc:Loc PokemonEditor_Name}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                         <TextBox Text="{Binding OriginalTrainerName}" AutomationProperties.Name="{loc:Loc PokemonEditor_Name}" />
+                                        <TextBlock Text="{Binding NameEncodingError}" IsVisible="{Binding HasNameEncodingError}" TextWrapping="Wrap" FontSize="11" />
                                     </StackPanel>
 
-                                    <StackPanel Grid.Row="1" Grid.Column="2">
+                                    <StackPanel Grid.Row="1" Grid.Column="2" IsVisible="{Binding HasGen2Fields}">
                                         <TextBlock Text="{loc:Loc PokemonEditor_Gender}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                         <ComboBox ItemsSource="{Binding GenderList}"
                                                   SelectedValue="{Binding OriginalTrainerGender}" SelectedValueBinding="{Binding Value}"
@@ -574,18 +595,18 @@
                                                            AutomationProperties.Name="{loc:Loc PokemonEditor_Tid}"
                                                            ToolTip.Tip="{Binding Tsv, StringFormat='TSV: {0}'}" />
                                         </StackPanel>
-                                        <StackPanel Grid.Row="0" Grid.Column="2">
+                                        <StackPanel Grid.Row="0" Grid.Column="2" IsVisible="{Binding HasModernFields}">
                                             <TextBlock Text="{loc:Loc PokemonEditor_Sid}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                             <NumericUpDown Value="{Binding Sid}" Minimum="0" Maximum="65535" FormatString="0" ShowButtonSpinner="False"
                                                            AutomationProperties.Name="{loc:Loc PokemonEditor_Sid}"
                                                            ToolTip.Tip="{Binding Tsv, StringFormat='TSV: {0}'}" />
                                         </StackPanel>
                                         <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,4,0,0"
-                                                   Opacity="0.6" Text="{Binding Tsv, StringFormat='TSV: {0}'}"
+                                                   IsVisible="{Binding HasModernFields}" Opacity="0.6" Text="{Binding Tsv, StringFormat='TSV: {0}'}"
                                                    AutomationProperties.Name="{loc:Loc PokemonEditor_TrainerShinyValue}" />
                                     </Grid>
 
-                                    <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,6,0,0">
+                                    <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,6,0,0" IsVisible="{Binding HasModernFields}">
                                         <TextBlock Text="{loc:Loc MemoryEditor_OtFriendship}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                         <NumericUpDown Value="{Binding OriginalTrainerFriendship}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"
                                                        AutomationProperties.Name="{loc:Loc MemoryEditor_OtFriendship}" />
@@ -640,9 +661,9 @@
                             <!-- Extra Info Card -->
                             <Border Classes="editor-section">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="{loc:Loc PokemonEditor_EncryptionStatus}" FontWeight="Bold" Opacity="0.6" />
+                                    <TextBlock IsVisible="{Binding HasModernFields}" Text="{loc:Loc PokemonEditor_EncryptionStatus}" FontWeight="Bold" Opacity="0.6" />
 
-                                    <UniformGrid Columns="2">
+                                    <UniformGrid Columns="2" IsVisible="{Binding HasModernFields}">
                                         <StackPanel Margin="0,0,4,0">
                                             <TextBlock Text="{loc:Loc PokemonEditor_Pid}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                             <Grid ColumnDefinitions="*,Auto">
@@ -684,12 +705,12 @@
                                             <NumericUpDown Value="{Binding Exp}" Minimum="0" Maximum="16400000" FormatString="0" ShowButtonSpinner="False"
                                                            AutomationProperties.Name="{loc:Loc PokemonEditor_Exp}" />
                                         </StackPanel>
-                                        <StackPanel Grid.Row="0" Grid.Column="2">
+                                        <StackPanel Grid.Row="0" Grid.Column="2" IsVisible="{Binding HasGen2Fields}">
                                             <TextBlock Text="{loc:Loc PokemonEditor_Friendship}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                             <NumericUpDown Value="{Binding Happiness}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"
                                                            AutomationProperties.Name="{loc:Loc PokemonEditor_Friendship}" />
                                         </StackPanel>
-                                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,6,0,0">
+                                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,6,0,0" IsVisible="{Binding HasGen2Fields}">
                                             <TextBlock Text="{loc:Loc PokemonEditor_Pkrs}" FontWeight="SemiBold" Margin="0,0,0,4" />
                                             <Grid ColumnDefinitions="*,8,*">
                                                 <NumericUpDown Grid.Column="0" Value="{Binding PkrsDays}" Minimum="0" Maximum="15" FormatString="0" ShowButtonSpinner="False" MinWidth="56"

@@ -12,6 +12,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
 {
     private PKM _pk;
     private readonly SaveFile _sav;
+    private readonly AppSettings _nameSettings;
     private readonly ISpriteRenderer _spriteRenderer;
     private readonly IDialogService _dialogService;
     private readonly IWindowService _windowService;
@@ -142,7 +143,9 @@ public partial class PokemonEditorViewModel : ViewModelBase
     /// Gender choices valid for the edited Pokémon. Form-gender-specific species (such as
     /// Meowstic) cannot be genderless; trainer gender fields still use <see cref="GenderList"/>.
     /// </summary>
-    public IReadOnlyList<ComboItem> PokemonGenderList => SpeciesCategory.IsFormGenderSpecific((ushort)Species)
+    public IReadOnlyList<ComboItem> PokemonGenderList => UsesLegacyStats
+        ? _pk.PersonalInfo.Gender is 0 or 254 or 255 ? [GenderList[_pk.Gender]] : [GenderList[0], GenderList[1]]
+        : SpeciesCategory.IsFormGenderSpecific((ushort)Species)
         ? [GenderList[0], GenderList[1]]
         : GenderList;
 
@@ -223,10 +226,11 @@ public partial class PokemonEditorViewModel : ViewModelBase
     public bool IsHaXMode => _haXMode;
     public PKM TargetPKM => _pk;
 
-    public PokemonEditorViewModel(PKM pk, SaveFile sav, ISpriteRenderer spriteRenderer, IDialogService dialogService, IWindowService windowService, bool haXMode = false)
+    public PokemonEditorViewModel(PKM pk, SaveFile sav, ISpriteRenderer spriteRenderer, IDialogService dialogService, IWindowService windowService, bool haXMode = false, AppSettings? settings = null)
     {
         _pk = pk.Clone(); // Always work on a copy
         _sav = sav;
+        _nameSettings = settings ?? new AppSettings();
         _spriteRenderer = spriteRenderer;
         _dialogService = dialogService;
         _windowService = windowService;
@@ -241,6 +245,9 @@ public partial class PokemonEditorViewModel : ViewModelBase
         OriginGameList = filtered.Games;
         RelearnMoveDataSource = filtered.Relearn;
         LanguageList = GameInfo.Sources.LanguageDataSource(sav.Generation, sav.Context);
+        _gen4NameEncoding = _nameSettings.Gen4NameEncoding;
+        _useGen3ChineseNames = _nameSettings.Gen3ChineseNamesEnabled;
+        _nameEncoding = _sav.Generation is 1 or 2 ? _nameSettings.GetNameEncoding(_sav.Generation) : Gen12NameEncoding.Official;
         LoadFromPKM();
     }
 
@@ -313,6 +320,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
 
     public void RefreshLanguage()
     {
+        NotifyNameEncoding();
         OnPropertyChanged(nameof(GenderList));
         OnPropertyChanged(nameof(PokemonGenderList));
         var filtered = GameInfo.FilteredSources;
@@ -356,7 +364,8 @@ public partial class PokemonEditorViewModel : ViewModelBase
             UpdateAbilityList(false);
 
             Ability = _pk.Ability;
-            Nickname = _pk.Nickname;
+            NotifyNameEncoding();
+            Nickname = DecodedNickname;
             IsNicknamed = _pk.IsNicknamed;
             Level = _pk.CurrentLevel;
             Nature = (int)_pk.Nature;
@@ -433,7 +442,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
             EggLocation = _pk.EggLocation;
             MetLevel = _pk.MetLevel;
 
-            OriginalTrainerName = _pk.OriginalTrainerName;
+            OriginalTrainerName = DecodedTrainerName;
             TrainerID = _pk.DisplayTID;
             OriginalTrainerGender = _pk.OriginalTrainerGender;
 
@@ -472,6 +481,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
             OnPropertyChanged(nameof(MetDate));
             OnPropertyChanged(nameof(EggDate));
             OnPropertyChanged(nameof(ShowStatAlignment));
+            NotifyLegacyFields();
             OnPropertyChanged(nameof(HasHyperTraining));
             OnPropertyChanged(nameof(CanHyperTrain));
             OnPropertyChanged(nameof(Tsv));
@@ -559,6 +569,11 @@ public partial class PokemonEditorViewModel : ViewModelBase
     partial void OnFormChanged(int value)
     {
         if (_isLoading) return;
+        if (UsesLegacyStats)
+        {
+            SetLegacyForm(value);
+            SyncLegacyStats();
+        }
         if (SpeciesCategory.IsFormGenderSpecific((ushort)Species) && value >= 0)
         {
             var formGender = value & 1;
@@ -576,7 +591,13 @@ public partial class PokemonEditorViewModel : ViewModelBase
     partial void OnIsShinyChanged(bool value)
     {
         if (_isLoading) return;
-        if (value) _pk.SetShiny(); else _pk.SetUnshiny();
+        if (UsesLegacyStats) SetLegacyShiny(value);
+        else if (value) _pk.SetShiny(); else _pk.SetUnshiny();
+        if (UsesLegacyStats)
+        {
+            SyncLegacyStats();
+            RecalculateStats();
+        }
         SyncPidFieldsFromEntity();
         OnPropertyChanged(nameof(CharacteristicText));
         UpdateSprite();
@@ -622,6 +643,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
 
     private void UpdateDefaultNickname()
     {
+        if (UsesChineseNames) return;
         _pk.Species = (ushort)Species;
         _pk.Language = Language;
         var nickname = _pk.ClearNickname() ?? string.Empty;
@@ -634,6 +656,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
 
     private void ApplyNicknameEdit()
     {
+        if (UsesChineseNames) return;
         _pk.Species = (ushort)Species;
         _pk.Language = Language;
         var nickname = Nickname ?? string.Empty;
@@ -658,6 +681,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
     partial void OnIsNicknamedChanged(bool value)
     {
         if (_isLoading) return;
+        if (UsesChineseNames) return;
         if (value)
         {
             _pk.Nickname = Nickname ?? string.Empty;
@@ -674,6 +698,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
     {
         if (_isLoading) return;
         OnPropertyChanged(nameof(LanguageTooltip));
+        if (UsesChineseNames) return;
         _pk.Language = value;
         if (!IsNicknamed)
             UpdateDefaultNickname();
@@ -701,6 +726,12 @@ public partial class PokemonEditorViewModel : ViewModelBase
     {
         if (_isLoading)
             return;
+
+        if (UsesLegacyStats)
+        {
+            SetLegacyGender(value);
+            return;
+        }
 
         if (SpeciesCategory.IsFormGenderSpecific((ushort)Species))
         {
@@ -796,9 +827,9 @@ public partial class PokemonEditorViewModel : ViewModelBase
     private void UpdateSprite()
     {
         _pk.Species = (ushort)Species;
-        _pk.Form = (byte)Form;
-        if (IsShiny && !_pk.IsShiny) _pk.SetShiny();
-        else if (!IsShiny && _pk.IsShiny) _pk.SetUnshiny();
+        if (!UsesLegacyStats) _pk.Form = (byte)Form;
+        if (!UsesLegacyStats && IsShiny && !_pk.IsShiny) _pk.SetShiny();
+        else if (!UsesLegacyStats && !IsShiny && _pk.IsShiny) _pk.SetUnshiny();
         SyncPidFieldsFromEntity();
         Sprite = _spriteRenderer.GetSprite(_pk);
     }
@@ -841,12 +872,25 @@ public partial class PokemonEditorViewModel : ViewModelBase
 
     public PKM PreparePKM()
     {
+        if (!CheckNameEncoding()) throw new InvalidOperationException(NameEncodingError);
+        // Gen 1-3 name setters can regenerate raw names. Preserve names
+        // that the user has not edited, including unknown encodings and trailing bytes.
+        bool preserveGbaNames = ((_sav is SAV3 && _pk is PK3) || (_sav is SAV4 && _pk is PK4)) && Language == _pk.Language && IsEgg == _pk.IsEgg;
+        var keepNickname = (HasLegacyNames || preserveGbaNames || UsesGen4ChineseNames) && Nickname == DecodedNickname
+            ? _pk.NicknameTrash.ToArray() : null;
+        var keepTrainer = (HasLegacyNames || preserveGbaNames || UsesGen4ChineseNames) && OriginalTrainerName == DecodedTrainerName
+            ? _pk.OriginalTrainerTrash.ToArray() : null;
         ApplyMetadata();
         _pk.Species = (ushort)Species;
-        _pk.Form = (byte)Form;
-        _pk.Language = Language;
-        _pk.Nickname = Nickname ?? string.Empty;
-        _pk.IsNicknamed = IsNicknamed;
+        if (!UsesLegacyStats) _pk.Form = (byte)Form;
+        if (UsesChineseNames)
+            ApplyChineseNames();
+        else
+        {
+            _pk.Language = Language;
+            _pk.Nickname = Nickname ?? string.Empty;
+            _pk.IsNicknamed = IsNicknamed;
+        }
         _pk.Stat_Level = (byte)Level;
         _pk.StatAlignment = (Nature)StatAlignment;
         _pk.Nature = (Nature)Nature;
@@ -857,11 +901,19 @@ public partial class PokemonEditorViewModel : ViewModelBase
         _pk.HeldItem = HeldItem;
         _pk.Ball = (byte)Ball;
         _pk.Gender = (byte)Gender;
-        _pk.IsEgg = IsEgg;
+        if (UsesGen3ChineseNames && _pk is PK3 chinesePk3)
+        {
+            // The official egg setter forces Japanese text/language, disabling this ROM's
+            // international-font patch. Keep custom names/language while updating both flags.
+            chinesePk3.IV32 = (chinesePk3.IV32 & ~0x40000000u) | (IsEgg ? 0x40000000u : 0);
+            chinesePk3.FlagIsEgg = IsEgg;
+        }
+        else
+            _pk.IsEgg = IsEgg;
 
-        if (IsShiny && !_pk.IsShiny)
+        if (!UsesLegacyStats && IsShiny && !_pk.IsShiny)
             _pk.SetShiny();
-        else if (!IsShiny && _pk.IsShiny)
+        else if (!UsesLegacyStats && !IsShiny && _pk.IsShiny)
             _pk.SetUnshiny();
 
         _pk.Move1 = (ushort)Move1;
@@ -883,21 +935,9 @@ public partial class PokemonEditorViewModel : ViewModelBase
         _pk.Move3_PPUps = PpUps3;
         _pk.Move4_PPUps = PpUps4;
 
-        _pk.IV_HP = IvHP;
-        _pk.IV_ATK = IvATK;
-        _pk.IV_DEF = IvDEF;
-        _pk.IV_SPA = IvSPA;
-        _pk.IV_SPD = IvSPD;
-        _pk.IV_SPE = IvSPE;
+        ApplyStatValues();
 
-        _pk.EV_HP = EvHP;
-        _pk.EV_ATK = EvATK;
-        _pk.EV_DEF = EvDEF;
-        _pk.EV_SPA = EvSPA;
-        _pk.EV_SPD = EvSPD;
-        _pk.EV_SPE = EvSPE;
-
-        _pk.OriginalTrainerName = OriginalTrainerName;
+        if (!UsesChineseNames) _pk.OriginalTrainerName = OriginalTrainerName;
         _pk.OriginalTrainerGender = (byte)OriginalTrainerGender;
         _pk.OriginalTrainerFriendship = (byte)OriginalTrainerFriendship;
         _pk.HandlingTrainerName = HandlingTrainerName;
@@ -915,7 +955,7 @@ public partial class PokemonEditorViewModel : ViewModelBase
             _pk.EncryptionConstant = ec;
 
         _pk.EXP = (uint)Exp;
-        _pk.Language = Language;
+        if (!UsesChineseNames) _pk.Language = Language;
         _pk.PokerusStrain = PkrsStrain;
         _pk.PokerusDays = PkrsDays;
 
@@ -983,6 +1023,8 @@ public partial class PokemonEditorViewModel : ViewModelBase
         else
             _pk.ResetPartyStats();
         
+        if (keepNickname is not null) keepNickname.CopyTo(_pk.NicknameTrash);
+        if (keepTrainer is not null) keepTrainer.CopyTo(_pk.OriginalTrainerTrash);
         return _pk.Clone();
     }
 

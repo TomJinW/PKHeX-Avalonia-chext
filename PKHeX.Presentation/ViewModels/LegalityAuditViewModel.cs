@@ -16,12 +16,13 @@ namespace PKHeX.Presentation.ViewModels;
 
 /// <summary>
 /// Legality Audit: scans every occupied party/box slot of the current save with the same
-/// <see cref="LegalityAnalysis"/> code path the editor's legality panel uses, and shows the
+/// <see cref="SaveLegalityCheck"/> code path the editor's legality panel uses, and shows the
 /// results in a filterable, exportable, sortable spreadsheet in a modeless tool window.
 /// </summary>
 public partial class LegalityAuditViewModel : ViewModelBase
 {
     private readonly SaveFile _sav;
+    private readonly AppSettings _settings;
     private readonly IDialogService _dialogService;
     private readonly LegalityAuditUseCase _useCase = new();
 
@@ -66,9 +67,10 @@ public partial class LegalityAuditViewModel : ViewModelBase
     /// <summary>Raised when the user activates (double-clicks) a row to navigate to it in the editor.</summary>
     public event Action<LegalityAuditRow>? RowActivated;
 
-    public LegalityAuditViewModel(SaveFile sav, IDialogService dialogService)
+    public LegalityAuditViewModel(SaveFile sav, IDialogService dialogService, AppSettings? settings = null)
     {
         _sav = sav;
+        _settings = settings ?? new AppSettings();
         _dialogService = dialogService;
     }
 
@@ -90,9 +92,20 @@ public partial class LegalityAuditViewModel : ViewModelBase
                 Progress = p.Total == 0 ? 0 : 100.0 * p.Completed / p.Total);
             var token = _cts.Token;
 
-            var entries = await Task.Run(() => _useCase.Execute(_sav, progress, token), token);
+            var encoding = _settings.GetNameEncoding(_sav.Generation);
+            var ignoreTrash = _settings.IgnoreGen3NameTrashErrors;
+            var chineseNgc = _settings.Gen3NgcChineseNamesEnabled;
+            var chinese5 = _settings.Gen5ChineseNamesEnabled;
+            var encoding4 = _settings.Gen4NameEncoding;
+            var chinese6 = _settings.Gen6ChineseNamesEnabled;
+            var nameSettings = new AppSettings
+            {
+                Gen1NameEncoding = encoding, Gen2NameEncoding = encoding,
+                Gen3ChineseNamesEnabled = _settings.Gen3ChineseNamesEnabled, Gen4NameEncoding = encoding4,
+            };
+            var entries = await Task.Run(() => _useCase.Execute(_sav, progress, token, encoding, ignoreTrash, chinese5, chinese6, encoding4, chineseNgc), token);
 
-            _allRows = entries.Select(e => new LegalityAuditRow(e, strings)).ToList();
+            _allRows = entries.Select(e => new LegalityAuditRow(e, strings, _sav, nameSettings)).ToList();
             ApplyFilter();
 
             var illegalCount = _allRows.Count(r => !r.Valid);
@@ -139,6 +152,7 @@ public partial class LegalityAuditViewModel : ViewModelBase
             filtered = filtered.Where(r =>
                 r.Species.Contains(text, StringComparison.OrdinalIgnoreCase) ||
                 r.Nickname.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+                r.OT.Contains(text, StringComparison.OrdinalIgnoreCase) ||
                 r.FailureSummary.Contains(text, StringComparison.OrdinalIgnoreCase));
         }
 

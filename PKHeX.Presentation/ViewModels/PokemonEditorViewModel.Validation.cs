@@ -17,10 +17,16 @@ public partial class PokemonEditorViewModel
 
     private void Validate()
     {
+        if (!CheckNameEncoding())
+        {
+            IsLegal = false;
+            LegalityReport = NameEncodingError;
+            return;
+        }
         var pk = PreparePKM();
-        var la = new LegalityAnalysis(pk, _sav.Personal);
+        var la = SaveLegalityCheck.Evaluate(pk, _sav, _nameEncoding, _nameSettings.IgnoreGen3NameTrashErrors, _nameSettings.Gen5ChineseNamesEnabled, _nameSettings.Gen6ChineseNamesEnabled, _nameSettings.Gen4NameEncoding, _nameSettings.Gen3NgcChineseNamesEnabled);
         IsLegal = _haXMode || la.Valid;
-        LegalityReport = la.Report();
+        LegalityReport = la.ReportText;
     }
 
     [RelayCommand]

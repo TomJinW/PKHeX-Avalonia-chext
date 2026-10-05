@@ -8,6 +8,11 @@ namespace PKHeX.Presentation.ViewModels;
 
 public partial class BoxLayoutEditorViewModel : ViewModelBase, ICloseableDialog
 {
+    private readonly bool _chineseNames;
+    private readonly AppSettings _nameSettings;
+    private readonly HashSet<int> _invalidNames = [];
+    public bool HasNameError => _invalidNames.Count != 0;
+    private bool CanSaveNames() => !HasNameError;
     private readonly SaveFile _source;
     private readonly SaveFile _working;
     private readonly IBoxDetailNameRead? _nameReader;
@@ -16,12 +21,19 @@ public partial class BoxLayoutEditorViewModel : ViewModelBase, ICloseableDialog
 
     public Action? CloseRequested { get; set; }
 
-    public BoxLayoutEditorViewModel(SaveFile sav)
+    public BoxLayoutEditorViewModel(SaveFile sav, AppSettings? settings = null)
     {
+        _nameSettings = settings ?? new AppSettings();
+        _chineseNames = TranslatedSaveNames.UsesBoxes(sav, _nameSettings);
         _source = sav;
         var editedBeforeClone = sav.State.Edited;
-        _working = sav.Clone();
-        sav.State.Edited = editedBeforeClone;
+        var sourceBytes = sav.Data.ToArray();
+        try { _working = sav.Clone(); }
+        finally
+        {
+            sourceBytes.CopyTo(sav.Data);
+            sav.State.Edited = editedBeforeClone;
+        }
         _nameReader = _working as IBoxDetailNameRead;
         _nameWriter = _working as IBoxDetailName;
         _wallpaper = _working as IBoxDetailWallpaper;
@@ -94,7 +106,7 @@ public partial class BoxLayoutEditorViewModel : ViewModelBase, ICloseableDialog
         Boxes.Clear();
         for (int i = 0; i < _working.BoxCount; i++)
         {
-            var name = _nameReader?.GetBoxName(i) ?? BoxDetailNameExtensions.GetDefaultBoxName(i);
+            var name = TranslatedSaveNames.BoxName(_working, i, _nameSettings);
             var wallpaper = _wallpaper?.GetBoxWallpaper(i) ?? 0;
             Boxes.Add(new BoxLayoutItemViewModel(i, _working.BoxCount, name, wallpaper, OnBoxNameChanged, OnBoxWallpaperChanged));
         }
@@ -102,6 +114,16 @@ public partial class BoxLayoutEditorViewModel : ViewModelBase, ICloseableDialog
 
     private void OnBoxNameChanged(int box, string name)
     {
+        if (_chineseNames)
+        {
+            if (TranslatedSaveNames.TrySetBoxName(_working, box, name, _nameSettings))
+                _invalidNames.Remove(box);
+            else
+                _invalidNames.Add(box);
+            OnPropertyChanged(nameof(HasNameError));
+            SaveCommand.NotifyCanExecuteChanged();
+            return;
+        }
         _nameWriter?.SetBoxName(box, name);
     }
 
@@ -111,10 +133,10 @@ public partial class BoxLayoutEditorViewModel : ViewModelBase, ICloseableDialog
             _wallpaper.SetBoxWallpaper(box, wallpaper);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSaveNames))]
     private void Save()
     {
-        if (!IsSupported)
+        if (!IsSupported || HasNameError)
             return;
 
         _source.CopyChangesFrom(_working);
@@ -124,13 +146,25 @@ public partial class BoxLayoutEditorViewModel : ViewModelBase, ICloseableDialog
     [RelayCommand]
     private void Cancel() => CloseRequested?.Invoke();
 
+    private bool SwapBoxes(int first, int second)
+    {
+        if (HasNameError) return false;
+        if (!_chineseNames) return _working.SwapBox(first, second);
+        var firstName = TranslatedSaveNames.BoxBytes(_working, first);
+        var secondName = TranslatedSaveNames.BoxBytes(_working, second);
+        if (!_working.SwapBox(first, second)) return false;
+        TranslatedSaveNames.SetBoxBytes(_working, first, secondName);
+        TranslatedSaveNames.SetBoxBytes(_working, second, firstName);
+        return true;
+    }
+
     [RelayCommand]
     private void MoveUp(BoxLayoutItemViewModel? box)
     {
         if (box is null || box.Index <= 0)
             return;
 
-        if (_working.SwapBox(box.Index, box.Index - 1))
+        if (SwapBoxes(box.Index, box.Index - 1))
             LoadBoxes();
     }
 
@@ -140,7 +174,7 @@ public partial class BoxLayoutEditorViewModel : ViewModelBase, ICloseableDialog
         if (box is null || box.Index >= _working.BoxCount - 1)
             return;
 
-        if (_working.SwapBox(box.Index, box.Index + 1))
+        if (SwapBoxes(box.Index, box.Index + 1))
             LoadBoxes();
     }
 }

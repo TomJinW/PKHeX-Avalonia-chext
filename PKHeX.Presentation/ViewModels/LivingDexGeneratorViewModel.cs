@@ -49,14 +49,14 @@ public partial class LivingDexGeneratorViewModel : ViewModelBase
 
     [ObservableProperty] private string _skippedSpeciesReport = string.Empty;
 
-    public LivingDexGeneratorViewModel(SaveFile sav, ILivingDexService service, UndoRedoService undoRedo)
+    public LivingDexGeneratorViewModel(SaveFile sav, ILivingDexService service, UndoRedoService undoRedo, AppSettings? settings = null)
     {
         _sav = sav;
         _service = service;
         _undoRedo = undoRedo;
 
         BoxNames = new ObservableCollection<string>(Enumerable.Range(0, sav.BoxCount)
-            .Select(b => sav is IBoxDetailNameRead r ? r.GetBoxName(b) : BoxDetailNameExtensions.GetDefaultBoxName(b)));
+            .Select(b => TranslatedSaveNames.BoxName(sav, b, settings ?? new AppSettings())));
     }
 
     private bool CanGenerate => !IsRunning;
